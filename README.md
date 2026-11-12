@@ -143,11 +143,12 @@ const tokenHash = crypto.createHash('sha256').update(token).digest();
 return crypto.timingSafeEqual(secretHash, tokenHash);
 ```
 
-### Multi-Tenant Isolation Model
-1. **Identity Flow:** MCP over Streamable HTTP is a stateless protocol where the client connects using a server-wide Bearer secret. In this local model, the authenticated caller represents the primary tenant (`DEFAULT_USER_ID`: `00000000-0000-0000-0000-000000000001`).
-2. **Default Scoping:** When a caller invokes `list_records`, `search_records`, `get_record`, or `get_database_stats` without supplying a `userId`, `RecordService.resolveTenantUserId()` automatically scopes the query to `DEFAULT_USER_ID`.
-3. **Cross-Tenant Protection:** A tenant cannot read, update, or delete records belonging to another tenant (`userId`). Any attempt returns a clean "Record not found or permission denied" error. Cross-tenant reads can only occur if an administrator explicitly enables `ALLOW_CROSS_TENANT_READS=true` in `.env`.
-4. **Audit Immutability:** Every operation records the effective `userId` into the `audit_logs` table.
+### Single Trust Domain & Namespace Isolation Model
+1. **Trust Domain & Authentication:** The MCP server operates within a single organizational trust domain protected by a shared secret (`AUTH_SECRET`). All clients presenting this Bearer token are authenticated to communicate with the server.
+2. **`userId` as a Namespace Selector:** The `userId` argument in tool schemas functions as a logical namespace or partition selector within this shared trust domain (similar to selecting a project or workspace), rather than an independent authentication credential.
+3. **Default Scoping:** When a caller invokes `list_records`, `search_records`, `get_record`, or `get_database_stats` without supplying a `userId`, `RecordService.resolveTenantUserId()` scopes the query to `DEFAULT_USER_ID` (`00000000-0000-0000-0000-000000000001`).
+4. **Namespace Boundary Enforcement:** Within this trust domain, `RecordService` enforces namespace integrity: queries with a given `userId` cannot read, update, or delete records associated with another `userId`. Cross-namespace reads can be permitted only if an administrator explicitly enables `ALLOW_CROSS_TENANT_READS=true` in configuration.
+5. **Audit Logging:** Every operation records the effective `userId` into the immutable `audit_logs` table in Neon PostgreSQL.
 
 ### Denial-of-Service (DoS) and Memory Protection
 - **Payload Size Ceiling:** Express body parser enforces a strict 1 MB cap (`express.json({ limit: '1mb' })`). Oversized payloads are immediately rejected with an HTTP 413 `Payload Too Large` JSON response before reaching business logic.
@@ -199,19 +200,40 @@ return crypto.timingSafeEqual(secretHash, tokenHash);
    - *Observation:* The upstream PyPI package `class1==0.1.0` (both wheel and sdist) does not ship the `cost_engine/footprint.py` module, despite `cost_engine/__init__.py` attempting to import 13 symbols from it.
    - *Workaround:* Resolved cleanly in our repository wrapper (`python/run_class1.py`) by registering a placeholder module in `sys.modules['cost_engine.footprint']` covering all 14 names (`CarbonPrice`, `resolve_intensity`, `carbon_kg`, `simulate_carbon`, `analyze_footprint_delta`, `load_grid`, `resolve_water`, `water_m3`, `simulate_water`, `analyze_water_delta`, `embodied_carbon_kg`, `materials_adp_kg`, `ewaste_kg_year`, `footprint_report`).
    - *Integrity:* Every placeholder function raises `NotImplementedError` or returns `None`. No synthetic numbers (carbon kg, water m³, e-waste) are ever returned or stored. The report displays: `"Ecological footprint: NOT COMPUTED (cost_engine.footprint is missing from class1 0.1.0)"`.
-   - *Upstream Test Integrity:* The core takeoff and cost math test suite (`test_monte_carlo.py`, `test_scenario.py`, `test_contingency.py`, `test_escalation.py`, `test_policy_gate.py`, etc.) does not depend on footprint and passes completely (90 passed, 1 skipped).
-2. **Pricing Snapshot Age:**
+   - *Upstream Test Integrity:* The core takeoff and cost math test suite (`test_monte_carlo.py`, `test_scenario.py`, `test_contingency.py`, `test_escalation.py`, `test_policy_gate.py`, etc.) does not depend on footprint and passes upstream tests.
+2. **Second Upstream Packaging Defect (Unbundled Test Dependencies):**
+   - The sdist archive (`class1-0.1.0.tar.gz`) bundles 37 test files that import packages never distributed in the release (`autobuild`, `blue_book.prices`, `blue_book.capability`, `blue_book.spec`). Pytest fails collection on these 37 files with `ModuleNotFoundError`.
+3. **Pricing Snapshot Age:**
    - The pricing tables in `class1==0.1.0` (`snapshots/prices.json`) are from a static snapshot created approximately 159 days prior to evaluation. Modern models (e.g. `gpt-4.5-preview`) are absent and skipped by upstream tests.
-3. **Class 5 Screening Accuracy:**
+4. **Class 5 Screening Accuracy:**
    - In accordance with AACE International cost engineering standards, estimates generated without calibrated company historical actuals are classified as **Class 5 (Screening)**, carrying an expected accuracy maturity band of **-50% to +100%**.
-4. **Local Verdict Evaluation:**
+5. **Local Verdict Evaluation:**
    - In local mode, the approval verdict (`BLOCK`, `WARN`, `PASS`, `NO_BUDGET`) is evaluated by our TypeScript service layer based on the Monte Carlo P90 output, `budgetP90Usd`, and `CLASS1_WARN_FRACTION` (default: 0.8), rather than the proprietary upstream enterprise licensed policy gate.
-5. **Docker Environment Status on Host:**
-   - *Notice:* The local Windows host system does not have the Docker daemon or CLI installed (`docker` is not recognized). A hardened, multi-stage Debian Bookworm `Dockerfile` with pinned Python 3.11+, unprivileged `USER node`, and a curl `HEALTHCHECK` is provided in the repository root, but could not be built or executed on this host.
+6. **Monte Carlo Default Configuration:**
+   - By default, the takeoff engine executes **10,000 samples** (`-n 10000`), bounded between 1,000 and 120,000 via `CLASS1_MC_SAMPLES` in `src/config.ts`.
+7. **Host Runtime & Container Environment Status:**
+   - *Docker:* The local Windows host system does not have the Docker daemon or CLI installed (`docker` is not recognized). A hardened Debian Bookworm `Dockerfile` with pinned Python and non-root `USER node` is provided, but could not be built or executed on this host.
+   - *Node Version:* The specification targets Node 22; the local host environment runs Node v24.17.0.
+   - *Python Version:* Locally verified on Python 3.14.6; pinned dependencies require Python >= 3.11.
+8. **Third-Party Dependency Audit:**
+   - `npm audit` identifies 16 vulnerabilities (11 moderate, 3 high, 2 critical) residing in upstream transitive dependencies (`@nitrostack/core`, `@vitest`, `drizzle-orm`, `tinypool`) that cannot be patched without breaking API changes.
 
 ---
 
-## 8. Setup & Verification Instructions
+## 8. Open Questions for Mentor
+
+1. **Upstream Footprint Module (`cost_engine.footprint`):**
+   Will the package authors publish an official `class1==0.1.1` release restoring `cost_engine/footprint.py`, or should our repository wrapper (`python/run_class1.py`) and disclaimer be treated as the permanent integration architecture?
+2. **Second Upstream Packaging Defect:**
+   The upstream sdist includes 37 test modules that depend on unbundled packages (`autobuild` and `blue_book.prices`). Should we maintain permanent exclusions for these unbundled test suites, or should upstream sdist clean them up?
+3. **`WARN` Verdict Threshold Configuration:**
+   The `WARN` threshold is currently configured globally via `CLASS1_WARN_FRACTION` (default 0.8). Should this fraction be customizable per PR or per repository through tool call arguments?
+4. **Multi-Tenant Trust Model:**
+   The current implementation operates within a single organizational trust domain protected by a shared `AUTH_SECRET`, with `userId` acting as a logical workspace/namespace selector. Is this acceptable for production deployment, or does Class1Dev require true per-tenant cryptographic authentication (such as per-tenant JWT claims or individual API keys)?
+
+---
+
+## 9. Setup & Verification Instructions
 
 ### Prerequisites
 - Node.js >= 22.0.0
@@ -272,12 +294,12 @@ node scripts/test_restart_persistence.mjs
 
 ---
 
-## 9. Starting the Production Server
+## 10. Starting the Production Server
 
 ```bash
 npm start
 ```
-The server will bind to `http://localhost:3000`:
-- **MCP Endpoint:** `POST http://localhost:3000/mcp` (Header: `Authorization: Bearer <AUTH_SECRET>`)
-- **Health Probe:** `GET http://localhost:3000/health` (Exempt from auth and rate limits)
-- **Info Root:** `GET http://localhost:3000/`
+The server will bind to `http://127.0.0.1:3000` (configurable via `HOST` and `PORT`):
+- **MCP Endpoint:** `POST http://127.0.0.1:3000/mcp` (Header: `Authorization: Bearer <AUTH_SECRET>`)
+- **Health Probe:** `GET http://127.0.0.1:3000/health` (Exempt from auth and rate limits)
+- **Info Root:** `GET http://127.0.0.1:3000/`

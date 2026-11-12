@@ -37,7 +37,7 @@ To maintain zero modifications to Python `site-packages`, the engine is invoked 
 - Every placeholder function either raises `NotImplementedError` or returns `None`.
 - `footprint_report()` returns: `"Ecological footprint: NOT COMPUTED (cost_engine.footprint is missing from class1 0.1.0)"`.
 - **Zero invented metrics:** No carbon, water, or material numbers are ever generated, displayed, or stored.
-- Core cost math (`test_monte_carlo.py`, `test_scenario.py`, `test_escalation.py`, `test_policy_gate.py`) is 100% independent of footprint and passes upstream tests completely (90 passed, 1 skipped).
+- Core cost math (`test_monte_carlo.py`, `test_scenario.py`, `test_escalation.py`, `test_policy_gate.py`) does not import footprint and passes upstream tests.
 
 ---
 
@@ -48,17 +48,17 @@ Executes 23 unit tests verifying all 10 tool schemas, Zod validation boundaries,
 ```bash
 npm test
 ```
-*Result:* 23 passed (100% test pass rate).
+*Result:* 23 passed.
 
 ### 3.2 Secret Hygiene Scan
 Verifies that no unmasked secrets appear in tracked files or working tree files:
 ```bash
 .\.venv\Scripts\python scripts/scan_secrets.py
 ```
-*Result:* 0 secrets leaked across 44 files.
+*Result:* 0 live secrets leaked across repository files.
 
-### 3.3 HTTP Multi-Tenant Isolation
-Verifies that tenant data remains strictly segregated over the real HTTP `/mcp` transport:
+### 3.3 HTTP Multi-Tenant Namespace Isolation
+Verifies that tenant records remain segregated by namespace within the shared trust domain over the real HTTP `/mcp` transport:
 ```bash
 node scripts/test_tenant_isolation_http.mjs
 ```
@@ -66,7 +66,7 @@ node scripts/test_tenant_isolation_http.mjs
 - Unspecified `userId` scopes automatically to `DEFAULT_USER_ID`.
 - User A cannot `get_record`, `update_record`, `delete_record`, `list_records`, or `search_records` belonging to User B.
 - User B retains full CRUD capabilities over their own records.
-- Zero cross-tenant data leakage.
+- Cross-tenant access without administrative permission returns "Record not found or permission denied".
 
 ### 3.4 Edge Cases & Failure Modes
 Verifies server stability under adversarial inputs and failure conditions:
