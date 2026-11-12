@@ -220,16 +220,16 @@ return crypto.timingSafeEqual(secretHash, tokenHash);
 
 ---
 
-## 8. Open Questions for Mentor
+## 8. Actionable Open Questions for Mentor
 
 1. **Upstream Footprint Module (`cost_engine.footprint`):**
-   Will the package authors publish an official `class1==0.1.1` release restoring `cost_engine/footprint.py`, or should our repository wrapper (`python/run_class1.py`) and disclaimer be treated as the permanent integration architecture?
+   Can you obtain the complete package or the missing `cost_engine/footprint.py` file from the Class1 team, or is our repository wrapper (`python/run_class1.py`) with explicit disclaimers acceptable as the permanent production integration approach?
 2. **Second Upstream Packaging Defect:**
-   The upstream sdist includes 37 test modules that depend on unbundled packages (`autobuild` and `blue_book.prices`). Should we maintain permanent exclusions for these unbundled test suites, or should upstream sdist clean them up?
-3. **`WARN` Verdict Threshold Configuration:**
-   The `WARN` threshold is currently configured globally via `CLASS1_WARN_FRACTION` (default 0.8). Should this fraction be customizable per PR or per repository through tool call arguments?
-4. **Multi-Tenant Trust Model:**
-   The current implementation operates within a single organizational trust domain protected by a shared `AUTH_SECRET`, with `userId` acting as a logical workspace/namespace selector. Is this acceptable for production deployment, or does Class1Dev require true per-tenant cryptographic authentication (such as per-tenant JWT claims or individual API keys)?
+   Can you obtain the unbundled development packages (`autobuild` and `blue_book.prices` / `blue_book.spec`) from the upstream Class1 team so the full 469-test suite can run, or should our test runner permanently exclude those 37 uncollectable test files?
+3. **`WARN` Verdict Threshold Rule:**
+   Currently, `WARN` evaluates when `P90 >= CLASS1_WARN_FRACTION * budget` (default 0.8 / 80%). Does the team want this fraction to remain globally configured by environment variable, or should callers be able to provide custom per-estimate warning thresholds or tiered warning bands in tool arguments?
+4. **Tenant Authentication Architecture:**
+   Currently, authentication operates in a single trust domain using a shared `AUTH_SECRET`, with `userId` functioning as a logical workspace/namespace partition selector. Does Class1Dev require true per-tenant cryptographic authentication (such as per-tenant JWT claims or scoped individual API keys) before production deployment?
 
 ---
 

@@ -49,18 +49,29 @@ def main():
     print("Scanning for connection strings with embedded credentials (postgres://user:pass@host)...")
 
     ignored_dirs = {".git", ".venv", "node_modules", "dist", ".pytest_cache", "__pycache__"}
-    ignored_files = {".env"}
+    ignored_files = {".env", "scan_secrets.py"}
 
     real_leaks = []
     pattern_matches = []
     scanned_count = 0
 
-    # Whitelisted mock fixtures strictly used in unit tests for verifying sanitization
+    # Strictly scoped mock fixture allowlist: maps exact file path to exact allowed mock string
     allowed_mock_fixtures = {
-        "tests/auth-and-error.test.ts",
-        ".env.example",
-        "scripts/test_db_break_recovery.mjs",
-        "scripts/scan_secrets.py"
+        "tests/auth-and-error.test.ts": {
+            "postgresql://neondb_owner:npg_SecretPass123@ep-cool-lake-12345.us-east-2.aws.neon.tech",
+            "postgresql://user:pass@host",
+        },
+        ".env.example": {
+            "postgresql://[user]:[password]@[neon_hostname]",
+            "postgresql://neondb_owner:npg_sample_pass@ep-sample-pooler.us-east-2.aws.neon.tech",
+        },
+        "scripts/test_db_break_recovery.mjs": {
+            "postgresql://fake_user:${dynamicTestPassword}@ep-unreachable-neon-subdomain.us-east-2.aws.neon.tech",
+        },
+        "scripts/scan_secrets.py": {
+            "postgres://user:pass@host",
+            "postgres://user:pass@...",
+        },
     }
 
     for root, dirs, files in os.walk(os.getcwd()):
@@ -85,8 +96,8 @@ def main():
                     for m in matches:
                         if "[REDACTED]" in m:
                             continue
-                        if rel_path in allowed_mock_fixtures:
-                            pattern_matches.append((rel_path, f"TEST_FIXTURE ({m})"))
+                        if rel_path in allowed_mock_fixtures and m in allowed_mock_fixtures[rel_path]:
+                            pattern_matches.append((rel_path, f"EXACT_WHITELIST_FIXTURE ({m})"))
                         else:
                             real_leaks.append((rel_path, f"EMBEDDED_CONNECTION_STRING ({m})"))
             except Exception as e:
