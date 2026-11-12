@@ -25,15 +25,14 @@ def main():
 
     print(f"Loaded {len(secrets)} sensitive configuration keys to scan for.")
 
-    # Extract high-entropy / sensitive fragments to search for
-    # e.g., the password part of DATABASE_URL: postgresql://user:PASSWORD@host...
+    # Target specific needles from actual .env
     needles = []
     if "DATABASE_URL" in secrets:
         db_url = secrets["DATABASE_URL"]
         needles.append(("DATABASE_URL_FULL", db_url))
         m_pass = re.search(r":([^@]+)@", db_url)
         if m_pass:
-            db_pass = m_pass.group(1).split(":")[-1] # extract password component
+            db_pass = m_pass.group(1).split(":")[-1]
             if len(db_pass) > 4:
                 needles.append(("DATABASE_PASSWORD", db_pass))
 
@@ -45,11 +44,24 @@ def main():
 
     print(f"Searching for {len(needles)} sensitive target tokens across repository...")
 
+    # 2. Generic Regex for connection strings with embedded passwords (postgres://user:pass@...)
+    embedded_pass_regex = re.compile(r"postgres(?:ql)?:\/\/[a-zA-Z0-9_\-\.\%\[\]]+:[^@\s\/\"'\`]+@[a-zA-Z0-9_\-\.\%\[\]]+", re.IGNORECASE)
+    print("Scanning for connection strings with embedded credentials (postgres://user:pass@host)...")
+
     ignored_dirs = {".git", ".venv", "node_modules", "dist", ".pytest_cache", "__pycache__"}
     ignored_files = {".env"}
 
-    leaks = []
+    real_leaks = []
+    pattern_matches = []
     scanned_count = 0
+
+    # Whitelisted mock fixtures strictly used in unit tests for verifying sanitization
+    allowed_mock_fixtures = {
+        "tests/auth-and-error.test.ts",
+        ".env.example",
+        "scripts/test_db_break_recovery.mjs",
+        "scripts/scan_secrets.py"
+    }
 
     for root, dirs, files in os.walk(os.getcwd()):
         dirs[:] = [d for d in dirs if d not in ignored_dirs]
@@ -58,30 +70,44 @@ def main():
                 continue
             scanned_count += 1
             file_path = os.path.join(root, file)
-            rel_path = os.path.relpath(file_path, os.getcwd())
+            rel_path = os.path.relpath(file_path, os.getcwd()).replace("\\", "/")
             try:
                 with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
+
+                    # Check exact needles from real .env
                     for label, needle in needles:
                         if needle in content:
-                            leaks.append((rel_path, label))
+                            real_leaks.append((rel_path, label))
+
+                    # Check generic connection string regex
+                    matches = embedded_pass_regex.findall(content)
+                    for m in matches:
+                        if "[REDACTED]" in m:
+                            continue
+                        if rel_path in allowed_mock_fixtures:
+                            pattern_matches.append((rel_path, f"TEST_FIXTURE ({m})"))
+                        else:
+                            real_leaks.append((rel_path, f"EMBEDDED_CONNECTION_STRING ({m})"))
             except Exception as e:
                 print(f"Warning: could not read {rel_path}: {e}")
 
     print(f"Scanned {scanned_count} files across repository tree.")
+    print(f"\nRegex Pattern Matches Analyzed:")
+    for rel_path, detail in pattern_matches:
+        print(f"   [TEST_FIXTURE_AUDIT] {rel_path} -> {detail}")
 
-    if leaks:
-        print("\n❌ CRITICAL: Potential secret leaks detected!")
-        for rel_path, label in leaks:
+    if real_leaks:
+        print("\n❌ CRITICAL: Secret leak detected!")
+        for rel_path, label in real_leaks:
             print(f"   [LEAK] {rel_path} contains {label}")
         sys.exit(1)
     else:
-        print("\n✅ PASSED: 0 secrets leaked across all tracked and working tree files!")
-        print("   - DATABASE_URL: masked and git-ignored")
-        print("   - AUTH_SECRET: masked and git-ignored")
-        print("   - CLASS1_LICENSE_KEY: masked and git-ignored")
+        print("\n✅ PASSED: 0 real credentials leaked across repository!")
+        print("   - Live DATABASE_URL: 0 occurrences in repository files")
+        print("   - Live AUTH_SECRET: 0 occurrences in repository files")
+        print("   - Embedded connection string regex: 0 unmasked leaks in source or config")
         print("=" * 70)
 
 if __name__ == "__main__":
     main()
-

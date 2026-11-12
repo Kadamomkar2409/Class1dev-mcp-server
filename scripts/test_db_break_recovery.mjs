@@ -61,7 +61,8 @@ async function main() {
   // STEP 2: Broken Database Connection
   // -------------------------------------------------------------
   console.log('\n[Step 2] Starting server with BROKEN database connection...');
-  const brokenDbUrl = 'postgresql://fake_user:SUPER_SECRET_LEAK_TEST_PASSWORD@ep-unreachable-neon-subdomain.us-east-2.aws.neon.tech/neondb?sslmode=require';
+  const dynamicTestPassword = 'probe_test_password_' + Date.now();
+  const brokenDbUrl = `postgresql://fake_user:${dynamicTestPassword}@ep-unreachable-neon-subdomain.us-east-2.aws.neon.tech/neondb?sslmode=require`;
   server = spawn('node', ['dist/index.js'], {
     cwd: process.cwd(),
     env: { ...process.env, ...envVars, DATABASE_URL: brokenDbUrl },
@@ -79,7 +80,7 @@ async function main() {
   console.log(`   Sanitized Error:   ${body2.database?.error}`);
 
   // Credential Leak Verification
-  const leakedPassword = rawBody2.includes('SUPER_SECRET_LEAK_TEST_PASSWORD');
+  const leakedPassword = rawBody2.includes(dynamicTestPassword);
   const leakedUser = rawBody2.includes('fake_user');
   console.log(`   Credential Leak?   ${leakedPassword || leakedUser ? 'FAILED (LEAKED!)' : 'PASSED (0 Credential Leaks)'}`);
 
@@ -122,3 +123,4 @@ main().catch(err => {
   console.error('\nBreak/recovery test failed:', err);
   process.exit(1);
 });
+

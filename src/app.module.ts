@@ -19,7 +19,7 @@ import { config } from './config.js';
     type: 'http',
     http: {
       port: config.PORT,
-      host: '0.0.0.0',
+      host: config.HOST,
       basePath: '/mcp',
     },
   },

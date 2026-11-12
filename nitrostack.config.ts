@@ -1,8 +1,8 @@
 /**
- * NitroStack Cloud & Platform Deployment Configuration for Class1Dev
+ * NitroStack Configuration for Class1Dev Local MCP Server
  * 
- * Configures build parameters, Streamable HTTP transport on port 3000,
- * and container runtime targets.
+ * Configures build parameters, local Streamable HTTP transport bound to 127.0.0.1,
+ * and restricted CORS for local development.
  */
 export default {
   name: 'class1-neon-mcp-server',
@@ -16,15 +16,14 @@ export default {
   },
   server: {
     port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
+    host: process.env.HOST || '127.0.0.1',
     transports: ['http'],
     cors: {
-      origin: '*',
+      origin: [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5173',
+      ],
     },
-  },
-  cloud: {
-    region: 'us-central1',
-    autoScale: true,
-    minInstances: 1,
-    maxInstances: 10,
   },
 };

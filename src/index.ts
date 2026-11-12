@@ -5,14 +5,16 @@
  * Bootstraps the application via McpApplicationFactory with standard Streamable HTTP transport:
  * - Transport: Streamable HTTP on POST /mcp with Bearer token authentication
  * - Telemetry & Probing: GET /health and GET /
- * - Protocol Era: 'legacy' (2025-06-18) is enforced to ensure 100% compatibility
- *   with standard MCP clients, Claude Code, Cursor, and the official MCP Inspector,
- *   which rely on the standard JSON-RPC 2.0 'initialize' handshake and session semantics.
+ * - Binding: Defaults to 127.0.0.1 (overridable via HOST env var)
+ * - Protocol Era: 'legacy' (2025-06-18) is strictly REQUIRED. When omitted, @nitrostack/core
+ *   switches to 'modern (2026-07-28)' which rejects Zod object schemas with:
+ *   "Modern MCP handler error: inputSchema/outputSchema/argsSchema must be a Standard Schema"
+ *   and causes POST /mcp initialize to return HTTP 500.
  */
 
 import 'dotenv/config';
 
-// Ensure 100% compatibility with standard MCP clients and official MCP SDK
+// Strictly required by @nitrostack/core to support standard Zod schemas over JSON-RPC 2.0
 if (!process.env.NITRO_MCP_PROTOCOL_VERSION) {
   process.env.NITRO_MCP_PROTOCOL_VERSION = 'legacy';
 }
@@ -29,7 +31,7 @@ async function bootstrap() {
   await server.start({
     transport: 'http',
     port: config.PORT,
-    host: '0.0.0.0',
+    host: config.HOST,
   });
 }
 

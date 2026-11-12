@@ -8,6 +8,7 @@ const DEFAULT_DEV_SECRET = 'dev_secret_change_in_production_mcp_key_2026';
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(3000),
+  HOST: z.string().default('127.0.0.1'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required to connect to Neon PostgreSQL'),
   MCP_TRANSPORT: z.enum(['streamable-http', 'stdio']).default('streamable-http'),
   AUTH_SECRET: z.string().min(1, 'AUTH_SECRET is required'),
@@ -43,6 +44,7 @@ if (isProduction) {
 export const config = {
   NODE_ENV: parsed.success ? parsed.data.NODE_ENV : (process.env.NODE_ENV as 'development' | 'test' | 'production') || 'development',
   PORT: parsed.success ? parsed.data.PORT : (process.env.PORT ? parseInt(process.env.PORT, 10) : 3000),
+  HOST: parsed.success ? parsed.data.HOST : (process.env.HOST || '127.0.0.1'),
   DATABASE_URL: parsed.success ? parsed.data.DATABASE_URL : (process.env.DATABASE_URL || ''),
   MCP_TRANSPORT: parsed.success ? parsed.data.MCP_TRANSPORT : 'streamable-http',
   AUTH_SECRET: rawSecret,

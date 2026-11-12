@@ -12,3 +12,4 @@ main().catch(err => {
   console.error('Failed to query counts:', err);
   process.exit(1);
 });
+
