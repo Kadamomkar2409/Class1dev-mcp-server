@@ -76,10 +76,10 @@ export async function runMigrations() {
   }
 }
 
-// Allow direct CLI execution: tsx src/db/migrate.ts
+// Robust cross-platform CLI entrypoint check (handles Windows drive letters, slashes, and paths with spaces)
 const isMain = process.argv[1] && (
   import.meta.url === `file://${process.argv[1]}` ||
-  fileURLToPath(import.meta.url) === path.resolve(process.argv[1])
+  path.resolve(process.argv[1]).toLowerCase() === fileURLToPath(import.meta.url).toLowerCase()
 );
 
 if (isMain) {

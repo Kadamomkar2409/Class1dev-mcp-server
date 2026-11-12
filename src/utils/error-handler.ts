@@ -36,6 +36,9 @@ export function sanitizeErrorMessage(error: unknown): string {
   sanitized = sanitized.replace(/(password|secret|key|token)=[^&\s]+/gi, '$1=[REDACTED]');
 
   // Handle common database error patterns cleanly
+  if (/password authentication failed/i.test(sanitized)) {
+    return 'Database authentication failed. Please verify credentials.';
+  }
   if (/connection refused|ECONNREFUSED|getaddrinfo ENOTFOUND/i.test(sanitized)) {
     return 'Database connection failed. Please ensure the database is reachable.';
   }

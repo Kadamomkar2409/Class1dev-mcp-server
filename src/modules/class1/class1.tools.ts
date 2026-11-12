@@ -2,7 +2,7 @@ import { ToolDecorator as Tool, ExecutionContext, Injectable } from '@nitrostack
 import { RecordService } from '../../services/record.service.js';
 import { HealthService } from '../../services/health.service.js';
 import { Class1EngineService } from '../../services/class1-engine.service.js';
-import { formatToolError } from '../../utils/error-handler.js';
+import { formatToolError, sanitizeErrorMessage } from '../../utils/error-handler.js';
 import {
   CreateRecordSchema,
   GetRecordSchema,
@@ -55,6 +55,14 @@ export class Class1Tools {
         record,
       };
     } catch (err) {
+      const safeError = sanitizeErrorMessage(err);
+      await this.recordService.logAudit({
+        userId: args?.userId,
+        toolName: 'create_record',
+        action: 'VALIDATE',
+        status: 'VALIDATION_FAILED',
+        metadata: { error: safeError, attemptedTitle: args?.title },
+      });
       return formatToolError('create_record', err, 'Check input parameters and ensure valid JSON metadata.');
     }
   }
@@ -238,6 +246,15 @@ export class Class1Tools {
         report: result.reportText,
       };
     } catch (err) {
+      const safeError = sanitizeErrorMessage(err);
+      const isValidation = (err as any)?.name === 'ZodError';
+      await this.recordService.logAudit({
+        userId: args?.userId,
+        toolName: 'estimate_pr_cost',
+        action: isValidation ? 'VALIDATE' : 'ESTIMATE',
+        status: isValidation ? 'VALIDATION_FAILED' : 'ENGINE_FAILURE',
+        metadata: { error: safeError, path: args?.path },
+      });
       return formatToolError('estimate_pr_cost', err, 'Verify before/after code and engine execution parameters.');
     }
   }
