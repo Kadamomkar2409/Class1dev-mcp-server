@@ -4,7 +4,7 @@ import fs from 'fs';
 import os from 'os';
 import crypto from 'crypto';
 import { Injectable } from '@nitrostack/core';
-import { config } from '../config.js';
+import { config, PROJECT_ROOT } from '../config.js';
 import { sanitizeErrorMessage } from '../utils/error-handler.js';
 
 export interface Class1EngineInput {
@@ -95,16 +95,20 @@ export class Class1EngineService {
       return config.CLASS1_PYTHON_PATH;
     }
 
-    // Check virtual environment in current working directory
+    // Check virtual environment in project root (resolved relative to import.meta.url)
     const isWindows = process.platform === 'win32';
-    const venvPythonWin = path.resolve(process.cwd(), '.venv', 'Scripts', 'python.exe');
-    const venvPythonUnix = path.resolve(process.cwd(), '.venv', 'bin', 'python');
+    const candidateRoots = [PROJECT_ROOT, process.cwd()];
 
-    if (isWindows && fs.existsSync(venvPythonWin)) {
-      return venvPythonWin;
-    }
-    if (!isWindows && fs.existsSync(venvPythonUnix)) {
-      return venvPythonUnix;
+    for (const root of candidateRoots) {
+      const venvPythonWin = path.resolve(root, '.venv', 'Scripts', 'python.exe');
+      const venvPythonUnix = path.resolve(root, '.venv', 'bin', 'python');
+
+      if (isWindows && fs.existsSync(venvPythonWin)) {
+        return venvPythonWin;
+      }
+      if (!isWindows && fs.existsSync(venvPythonUnix)) {
+        return venvPythonUnix;
+      }
     }
 
     return 'python';
@@ -114,11 +118,14 @@ export class Class1EngineService {
    * Resolve repository wrapper script
    */
   private resolveWrapperScript(): string {
-    const wrapper = path.resolve(process.cwd(), 'python', 'run_class1.py');
-    if (!fs.existsSync(wrapper)) {
-      throw new Error(`Class1 engine runner script not found at ${wrapper}`);
+    const candidateRoots = [PROJECT_ROOT, process.cwd()];
+    for (const root of candidateRoots) {
+      const wrapper = path.resolve(root, 'python', 'run_class1.py');
+      if (fs.existsSync(wrapper)) {
+        return wrapper;
+      }
     }
-    return wrapper;
+    throw new Error(`Class1 engine runner script not found (searched ${PROJECT_ROOT} and ${process.cwd()})`);
   }
 
   /**
@@ -188,6 +195,7 @@ export class Class1EngineService {
         let killed = false;
 
         const child = spawn(pythonPath, args, {
+          cwd: PROJECT_ROOT,
           env: {
             ...process.env,
             PYTHONUTF8: '1',

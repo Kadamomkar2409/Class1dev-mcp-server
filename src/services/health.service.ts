@@ -14,6 +14,9 @@ export class HealthService {
     const mem = process.memoryUsage();
     const uptimeSeconds = Math.floor(process.uptime());
 
+    const requestedTransport = (process.env.MCP_TRANSPORT || process.env.MCP_TRANSPORT_TYPE || config.MCP_TRANSPORT || '').toLowerCase().trim();
+    const activeTransport: 'stdio' | 'streamable-http' = requestedTransport === 'stdio' ? 'stdio' : 'streamable-http';
+
     const isHealthy = dbStatus.connected;
 
     return {
@@ -22,7 +25,7 @@ export class HealthService {
       timestamp: new Date().toISOString(),
       uptimeSeconds,
       environment: config.NODE_ENV,
-      transport: config.MCP_TRANSPORT,
+      transport: activeTransport,
       service: {
         name: 'class1-neon-mcp-server',
         version: '1.0.0',

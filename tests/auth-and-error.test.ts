@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { sanitizeErrorMessage, formatToolError } from '../src/utils/error-handler.js';
+import { sanitizeErrorMessage, formatToolError, extractErrorDetails } from '../src/utils/error-handler.js';
 import { secureTimingEqual, authMiddleware } from '../src/middleware/auth.middleware.js';
-import { config } from '../src/config.js';
+import { config, resolveProjectRoot, PROJECT_ROOT } from '../src/config.js';
+import fs from 'node:fs';
+import path from 'node:path';
 
 describe('Error Sanitization and Safe Formatting', () => {
   it('should strip PostgreSQL connection strings and passwords from error messages', () => {
@@ -26,6 +28,41 @@ describe('Error Sanitization and Safe Formatting', () => {
     expect(envelope.tool).toBe('create_record');
     expect(envelope.message).toContain('postgresql://[REDACTED]');
     expect(envelope.message).not.toContain('pass@host');
+  });
+
+  it('should extract error details from ErrorEvent and custom objects without returning [object Object]', () => {
+    // Simulated Neon/ws ErrorEvent structure
+    const errorEvent = {
+      type: 'error',
+      constructor: { name: 'ErrorEvent' },
+      message: 'getaddrinfo ENOTFOUND ep-test.us-east-2.aws.neon.tech',
+      error: new Error('getaddrinfo ENOTFOUND ep-test.us-east-2.aws.neon.tech'),
+    };
+    const details = extractErrorDetails(errorEvent);
+    expect(details.className).toBe('Error');
+    expect(details.message).toContain('getaddrinfo ENOTFOUND');
+
+    const sanitized = sanitizeErrorMessage(errorEvent);
+    expect(sanitized).not.toContain('[object Object]');
+    expect(sanitized).not.toContain('[object ErrorEvent]');
+    expect(sanitized).toBe('Database connection failed. Please ensure the database is reachable.');
+  });
+
+  it('should extract details from plain objects with message or cause', () => {
+    const plain = { message: 'Connection terminated unexpectedly' };
+    const details = extractErrorDetails(plain);
+    expect(details.message).toBe('Connection terminated unexpectedly');
+
+    const sanitized = sanitizeErrorMessage(plain);
+    expect(sanitized).toBe('Connection terminated unexpectedly');
+    expect(sanitized).not.toContain('[object Object]');
+  });
+
+  it('should never return [object Object] when given an empty or opaque object', () => {
+    const opaque = { foo: 'bar' };
+    const sanitized = sanitizeErrorMessage(opaque);
+    expect(sanitized).not.toContain('[object Object]');
+    expect(sanitized).toContain('Database query execution failed');
   });
 });
 
@@ -177,5 +214,16 @@ describe('Transport Mode Configuration', () => {
       process.env.MCP_TRANSPORT = prev;
       process.env.MCP_TRANSPORT_TYPE = prevType;
     }
+  });
+
+  it('should resolve PROJECT_ROOT correctly regardless of cwd', () => {
+    expect(PROJECT_ROOT).toBeDefined();
+    expect(fs.existsSync(path.join(PROJECT_ROOT, 'package.json'))).toBe(true);
+    expect(fs.existsSync(path.join(PROJECT_ROOT, '.env'))).toBe(true);
+
+    // Test resolveProjectRoot with a simulated file URL in a subfolder
+    const mockFileUrl = `file:///${PROJECT_ROOT.replace(/\\/g, '/')}/dist/sub/deep/file.js`;
+    const resolved = resolveProjectRoot(mockFileUrl);
+    expect(resolved.toLowerCase()).toBe(PROJECT_ROOT.toLowerCase());
   });
 });

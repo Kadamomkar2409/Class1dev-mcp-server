@@ -113,7 +113,7 @@ neon-mcp-server/
 ├── tests/
 │   ├── auth-and-error.test.ts # Vitest suite for auth, error boundary & transports
 │   ├── class1-engine.test.ts  # Vitest suite for real Class1 engine integration
-│   └── tools.test.ts          # Vitest suite (31 total unit tests passing)
+│   └── tools.test.ts          # Vitest suite (35 total unit tests passing)
 ├── Dockerfile                 # Production multi-stage Debian Bookworm containerfile
 ├── drizzle.config.ts          # Drizzle Kit configuration
 ├── package.json               # Node.js dependencies and lifecycle scripts
@@ -181,6 +181,9 @@ The server supports two distinct operational modes tailored to production/networ
    - Designed for local GUI clients like **NitroStudio (v1.4.22)**, Claude Desktop, and Cursor.
    - **NitroStudio v1.4.22 Diagnosis:** Studio's connection probe to `http://127.0.0.1:3000/mcp` sends zero authentication headers, resulting in HTTP 401 Unauthorized. Rather than compromising security with query-string tokens or insecure HTTP bypass flags, STDIO mode establishes direct local IPC over process standard input/output streams.
    - **Stdout Cleanliness Guarantee:** In STDIO mode, `console.log` is redirected to `console.error` (stderr), ensuring `stdout` contains exclusively valid JSON-RPC 2.0 messages so client JSON parsers never fail.
+   - **Working Directory Independence:** All root paths (`.env`, `.venv`, and `python/run_class1.py`) are resolved dynamically relative to `import.meta.url` (`PROJECT_ROOT`). The server operates identically whether spawned from `neon-mcp-server/`, `E:\NitroStudio`, `C:\`, or an external runner.
+   - **Error Serialization & Logging Hygiene:** Error objects (including WebSocket `ErrorEvent` instances) are deeply unwrapped to extract their true error class and message. Raw error details are logged to `stderr` (visible in NitroStudio's App Canvas log), while client payloads present clean, sanitized error messages that strip database credentials, hosts, and passwords, never serializing to `"[object Object]"`.
+   - **Dynamic Transport & Uptime Telemetry:** `get_system_status` dynamically reports the active transport (`stdio` vs `streamable-http`). `uptimeSeconds` reports the continuous Node.js runtime (`process.uptime()`) of the persistent MCP server child process managed by NitroStudio.
    - No HTTP listener, TCP port, or network interface is opened. Security is bounded by the host operating system's process and filesystem isolation.
    - The HTTP security layer remains fully intact and is verified independently by automated test suites.
 
@@ -320,7 +323,7 @@ node scripts/verify-e2e.mjs
 # 7. Run Cold Restart Persistence verification
 node scripts/test_restart_persistence.mjs
 
-# 8. Run Real STDIO Handshake verification (initialize, tools/list, CRUD, estimate_pr_cost)
+# 8. Run Real STDIO Handshake verification from an external working directory (C:\)
 node scripts/test_stdio_handshake.mjs
 ```
 

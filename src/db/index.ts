@@ -3,7 +3,7 @@ import ws from 'ws';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import * as schema from './schema.js';
 import { config } from '../config.js';
-import { sanitizeErrorMessage } from '../utils/error-handler.js';
+import { sanitizeErrorMessage, extractErrorDetails } from '../utils/error-handler.js';
 
 // Configure Neon serverless connection pool with WebSocket constructor
 neonConfig.webSocketConstructor = ws;
@@ -48,10 +48,17 @@ export async function checkDatabaseConnection(): Promise<{
     };
   } catch (error) {
     const latencyMs = Date.now() - start;
+    const { className, message: rawMsg } = extractErrorDetails(error);
+    const sanitizedMsg = sanitizeErrorMessage(error);
+    const formattedError = sanitizedMsg.includes(className) ? sanitizedMsg : `${className}: ${sanitizedMsg}`;
+
+    // Always log the real error class and message to stderr (critical for STDIO mode and Studio console)
+    console.error(`[Health Check Database Error] ${className}: ${rawMsg}`);
+
     return {
       connected: false,
       latencyMs,
-      error: sanitizeErrorMessage(error),
+      error: formattedError,
     };
   }
 }
