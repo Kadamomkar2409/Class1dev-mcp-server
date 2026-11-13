@@ -4,6 +4,9 @@
  * Configures build parameters, local Streamable HTTP transport bound to 127.0.0.1,
  * and restricted CORS for local development.
  */
+const requestedTransport = (process.env.MCP_TRANSPORT || process.env.MCP_TRANSPORT_TYPE || '').toLowerCase().trim();
+const isStdio = requestedTransport === 'stdio';
+
 export default {
   name: 'class1-neon-mcp-server',
   version: '1.0.0',
@@ -17,7 +20,7 @@ export default {
   server: {
     port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
     host: process.env.HOST || '127.0.0.1',
-    transports: ['http'],
+    transports: isStdio ? ['stdio'] : ['http', 'stdio'],
     cors: {
       origin: [
         'http://localhost:3000',

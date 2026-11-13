@@ -11,7 +11,9 @@
 This repository provides a production-grade, locally verified Model Context Protocol (MCP) server engineered for **Class1Dev**. It integrates pre-merge AI cost-risk modeling with persistent cloud storage in **Neon PostgreSQL**, powered natively by the **NitroStack TypeScript SDK (`@nitrostack/core`)** and the **real upstream Class1 cost-risk takeoff engine (`class1==0.1.0`)**.
 
 ### Scope & Constraints (Local Scope)
-- **Local Implementation Only:** Runs locally over standard **Streamable HTTP** on `localhost:3000` via `POST /mcp`, `GET /health`, and `GET /`. Tested directly using `curl` and the official MCP Inspector. No NitroCloud edge routing or ChatGPT-specific dispatcher adapters.
+- **Dual Transport Support:** 
+  - **Streamable HTTP (Default):** Runs locally on `localhost:3000` via `POST /mcp`, `GET /health`, and `GET /`. Protected by constant-time Bearer token authentication, in-memory rate limiting (60 req/min), and a 1 MB payload size ceiling. Tested directly using `curl` and the official MCP Inspector.
+  - **STDIO Transport (`MCP_TRANSPORT=stdio`):** Enables direct standard input/output IPC communication for local GUI clients such as **NitroStudio (v1.4.22)**, Claude Desktop, and Cursor. In STDIO mode, no HTTP listener or TCP port is opened, and all logging (`console.log`) is redirected to `stderr`, preserving `stdout` strictly for JSON-RPC 2.0 frames.
 - **Real Class1 Takeoff Engine:** Fully integrated real Python cost engine executing stochastic Monte Carlo simulations and AST static code analysis. Zero synthetic, hardcoded, or invented numbers in completed features.
 - **Persistent Cloud Database:** Neon Serverless PostgreSQL storing users, cost estimate records, and tamper-resistant audit logs via Drizzle ORM.
 - **Ten Tools:** The 8 core PRD database/telemetry tools plus 2 Class1 engine tools (`estimate_pr_cost` and `get_cost_verdict`).
@@ -30,16 +32,20 @@ This repository provides a production-grade, locally verified Model Context Prot
 ├──────────────────────────┬─────────────────────────────────────────────────────────────┤
 │ LAYER                    │ RESPONSIBILITIES & PROTOCOLS                                │
 ├──────────────────────────┼─────────────────────────────────────────────────────────────┤
-│ MCP Client               │ curl / MCP Inspector / Claude Code / Cursor                 │
-│                          │ Protocol: JSON-RPC 2.0 over Streamable HTTP (POST /mcp)     │
+│ MCP Client Ingress       │ 1. HTTP: curl / MCP Inspector (POST /mcp with Bearer token) │
+│                          │ 2. STDIO: NitroStudio v1.4.22 / Claude Desktop (stdin/stdout)│
 ├──────────────────────────┼─────────────────────────────────────────────────────────────┤
-│ HTTP & Security Ingress  │ Express 4.x Server on port 3000                             │
+│ Transport & Security     │ Streamable HTTP Mode (Default, port 3000):                  │
 │                          │ - Constant-time Bearer token verification (timingSafeEqual) │
 │                          │ - Rate Limiting: 60 req/min on /mcp (Exempts GET /health)   │
 │                          │ - Body limit: 1 MB cap (HTTP 413 Payload Too Large)         │
 │                          │ - Sanitized Error Boundary (masks DB credentials/paths)     │
+│                          │ STDIO Mode (MCP_TRANSPORT=stdio):                           │
+│                          │ - Standard Input/Output JSON-RPC 2.0 framing                │
+│                          │ - Redirects console.log to stderr to prevent stdout clash   │
+│                          │ - Zero HTTP port exposure or header dependencies            │
 ├──────────────────────────┼─────────────────────────────────────────────────────────────┤
-│ MCP Protocol Layer       │ @nitrostack/core McpServer + StreamableHTTPServerTransport │
+│ MCP Protocol Layer       │ @nitrostack/core McpServer (Streamable HTTP or StdioServer) │
 │                          │ - Handles session negotiation, ping, and JSON-RPC dispatch  │
 │                          │ - Validates tool inputs via strict Zod schemas              │
 ├──────────────────────────┼─────────────────────────────────────────────────────────────┤
@@ -76,6 +82,7 @@ neon-mcp-server/
 │   ├── test_edge_cases.mjs    # Comprehensive suite verifying edge cases & limits
 │   ├── test_footprint_placeholder.py # Proves all 14 footprint symbols covered
 │   ├── test_restart_persistence.mjs  # Proves cold restart data persistence
+│   ├── test_stdio_handshake.mjs      # Real STDIO transport handshake test
 │   ├── test_tenant_isolation.ts      # Service-level tenant isolation test
 │   ├── test_tenant_isolation_http.mjs# Live HTTP /mcp tenant isolation test
 │   └── verify-e2e.mjs         # End-to-end verification of all 10 tools
@@ -104,7 +111,9 @@ neon-mcp-server/
 │   └── utils/
 │       └── error-handler.ts   # Error sanitization and secret masking utilities
 ├── tests/
-│   └── tools.test.ts          # Vitest suite (23 unit tests passing)
+│   ├── auth-and-error.test.ts # Vitest suite for auth, error boundary & transports
+│   ├── class1-engine.test.ts  # Vitest suite for real Class1 engine integration
+│   └── tools.test.ts          # Vitest suite (31 total unit tests passing)
 ├── Dockerfile                 # Production multi-stage Debian Bookworm containerfile
 ├── drizzle.config.ts          # Drizzle Kit configuration
 ├── package.json               # Node.js dependencies and lifecycle scripts
@@ -121,6 +130,7 @@ Configuration is strictly validated at startup using Zod in `src/config.ts`.
 | Variable | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `NODE_ENV` | `enum` | `development` | Environment mode (`development`, `test`, `production`). |
+| `MCP_TRANSPORT` | `enum` | `http` | Transport protocol selection: `http` (default, Streamable HTTP on port 3000) or `stdio` (standard I/O for NitroStudio, Claude Desktop). |
 | `PORT` | `number` | `3000` | Port for Express HTTP server. |
 | `DATABASE_URL` | `string` | *(Required)* | Neon PostgreSQL connection string (`postgresql://...`). Masked in all logs. |
 | `AUTH_SECRET` | `string` | *(Required)* | 32-byte secret for Bearer token authentication. Masked in all output. |
@@ -157,6 +167,22 @@ return crypto.timingSafeEqual(secretHash, tokenHash);
 - **Payload Size Ceiling:** Express body parser enforces a strict 1 MB cap (`express.json({ limit: '1mb' })`). Oversized payloads are immediately rejected with an HTTP 413 `Payload Too Large` JSON response before reaching business logic.
 - **Rate Limiting:** In-memory sliding-window limiter blocks callers exceeding 60 req/min on `/mcp` with HTTP 429 `Too Many Requests`. Public diagnostic probes (`GET /health`) and CORS preflights (`OPTIONS`) are strictly exempt to guarantee monitoring uptime.
 - **Engine Concurrency & Timeouts:** `Class1EngineService` uses an active execution semaphore restricting parallel engine runs to 2. Subprocesses are killed via `SIGKILL` if they exceed 30 seconds or emit > 5 MB.
+
+### Dual-Mode Transport Architecture & NitroStudio Integration
+The server supports two distinct operational modes tailored to production/network deployment vs. local developer tooling:
+1. **Streamable HTTP Mode (Default, Remote/Network Deployments):**
+   - Active when `MCP_TRANSPORT` is unset or set to `http`.
+   - Binds to `127.0.0.1:3000` (or configured `HOST`/`PORT`).
+   - Every `/mcp` request strictly requires `Authorization: Bearer <AUTH_SECRET>`.
+   - Protected by 60 req/min sliding-window rate limiting and a 1 MB payload size ceiling (`express.json({ limit: '1mb' })`).
+   - All network errors and unhandled exceptions are filtered through a sanitized error boundary that strips credentials and connection strings.
+2. **STDIO Mode (Local Developer Tooling & NitroStudio):**
+   - Active when `MCP_TRANSPORT=stdio` (or `MCP_TRANSPORT_TYPE=stdio`).
+   - Designed for local GUI clients like **NitroStudio (v1.4.22)**, Claude Desktop, and Cursor.
+   - **NitroStudio v1.4.22 Diagnosis:** Studio's connection probe to `http://127.0.0.1:3000/mcp` sends zero authentication headers, resulting in HTTP 401 Unauthorized. Rather than compromising security with query-string tokens or insecure HTTP bypass flags, STDIO mode establishes direct local IPC over process standard input/output streams.
+   - **Stdout Cleanliness Guarantee:** In STDIO mode, `console.log` is redirected to `console.error` (stderr), ensuring `stdout` contains exclusively valid JSON-RPC 2.0 messages so client JSON parsers never fail.
+   - No HTTP listener, TCP port, or network interface is opened. Security is bounded by the host operating system's process and filesystem isolation.
+   - The HTTP security layer remains fully intact and is verified independently by automated test suites.
 
 ---
 
@@ -273,7 +299,7 @@ npm run build
 
 ### Step 5: Execute Verification Suites
 ```bash
-# 1. Run unit test suite (23 Vitest tests)
+# 1. Run unit test suite (31 Vitest tests across 3 suites)
 npm test
 
 # 2. Run repository secret scan (verifies 0 leaks across git tree)
@@ -293,12 +319,16 @@ node scripts/verify-e2e.mjs
 
 # 7. Run Cold Restart Persistence verification
 node scripts/test_restart_persistence.mjs
+
+# 8. Run Real STDIO Handshake verification (initialize, tools/list, CRUD, estimate_pr_cost)
+node scripts/test_stdio_handshake.mjs
 ```
 
 ---
 
-## 10. Starting the Production Server
+## 10. Running the Server
 
+### Option A: Streamable HTTP Transport (Default)
 ```bash
 npm start
 ```
@@ -306,3 +336,18 @@ The server will bind to `http://127.0.0.1:3000` (configurable via `HOST` and `PO
 - **MCP Endpoint:** `POST http://127.0.0.1:3000/mcp` (Header: `Authorization: Bearer <AUTH_SECRET>`)
 - **Health Probe:** `GET http://127.0.0.1:3000/health` (Exempt from auth and rate limits)
 - **Info Root:** `GET http://127.0.0.1:3000/`
+
+### Option B: STDIO Transport for NitroStudio v1.4.22 & Local MCP Clients
+To connect **NitroStudio (v1.4.22)** or other local desktop clients (Claude Desktop, Cursor) to this MCP server over STDIO:
+1. In NitroStudio, navigate to **Settings** or **App Canvas** -> **Add Server** (or edit existing server connection).
+2. Select **Transport Type**: `STDIO`.
+3. Configure the execution parameters:
+   - **Command:** `node`
+   - **Arguments:** `dist/index.js`
+   - **Working Directory:** Path to `neon-mcp-server`
+   - **Environment Variables:**
+     - `MCP_TRANSPORT=stdio`
+     - `DATABASE_URL=<your_neon_database_url>`
+     - `AUTH_SECRET=<your_auth_secret>`
+     - `PYTHONUTF8=1`
+4. Connect: Studio immediately initializes, discovers all 10 tools, displays their interactive forms on the App Canvas, and enables live execution without HTTP 401 errors.

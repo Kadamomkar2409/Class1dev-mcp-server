@@ -39,6 +39,12 @@ export class HttpSetupService implements OnApplicationBootstrap {
   constructor(private readonly healthService: HealthService) {}
 
   async onApplicationBootstrap(): Promise<void> {
+    const requestedTransport = (process.env.MCP_TRANSPORT || process.env.MCP_TRANSPORT_TYPE || '').toLowerCase().trim();
+    if (requestedTransport === 'stdio') {
+      // In STDIO mode, no HTTP listener or transport is configured. Skip HTTP setup.
+      return;
+    }
+
     const server = DIContainer.getInstance().resolve<NitroStackServer>(NitroStackServer);
     const transport = server.getHttpTransport();
     const app = transport?.getApp?.();

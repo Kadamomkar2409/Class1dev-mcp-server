@@ -26,7 +26,7 @@ export function secureTimingEqual(a: string, b: string): boolean {
  */
 async function logUnauthorizedAttempt(req: Request, reason: string) {
   try {
-    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
     await db.insert(auditLogs).values({
       userId: null,
       toolName: 'auth_boundary',

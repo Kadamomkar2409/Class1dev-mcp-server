@@ -27,12 +27,28 @@ import { config } from './config.js';
  * Bootstrap the Class1Dev MCP application
  */
 async function bootstrap() {
+  const requestedTransport = (process.env.MCP_TRANSPORT || process.env.MCP_TRANSPORT_TYPE || '').toLowerCase().trim();
+  const isStdio = requestedTransport === 'stdio';
+
+  if (isStdio) {
+    // In STDIO mode, stdout is reserved EXCLUSIVELY for JSON-RPC 2.0 protocol messages.
+    // Redirect console.log to console.error (stderr) so any diagnostic messages never corrupt stdout.
+    console.log = (...args: any[]) => console.error(...args);
+  }
+
   const server = await McpApplicationFactory.create(AppModule);
-  await server.start({
-    transport: 'http',
-    port: config.PORT,
-    host: config.HOST,
-  });
+
+  if (isStdio) {
+    await server.start({
+      transport: 'stdio',
+    });
+  } else {
+    await server.start({
+      transport: 'http',
+      port: config.PORT,
+      host: config.HOST,
+    });
+  }
 }
 
 bootstrap().catch((error) => {

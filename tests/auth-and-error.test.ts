@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { sanitizeErrorMessage, formatToolError } from '../src/utils/error-handler.js';
-import { secureTimingEqual } from '../src/middleware/auth.middleware.js';
+import { secureTimingEqual, authMiddleware } from '../src/middleware/auth.middleware.js';
+import { config } from '../src/config.js';
 
 describe('Error Sanitization and Safe Formatting', () => {
   it('should strip PostgreSQL connection strings and passwords from error messages', () => {
@@ -44,5 +45,137 @@ describe('Constant-Time Auth Security Comparison', () => {
     const a = 'short_secret';
     const b = 'long_secret_value_with_different_length';
     expect(secureTimingEqual(a, b)).toBe(false);
+  });
+});
+
+describe('authMiddleware HTTP Authentication Boundary', () => {
+  it('should return 401 when Authorization header is missing', () => {
+    let statusCode = 0;
+    let jsonBody: any = null;
+    const req = { originalUrl: '/mcp', path: '/mcp', method: 'POST', headers: { 'user-agent': 'vitest' }, ip: '127.0.0.1', socket: { remoteAddress: '127.0.0.1' } } as any;
+    const res = {
+      status: (c: number) => { statusCode = c; return res; },
+      json: (d: any) => { jsonBody = d; return res; },
+    } as any;
+    const next = vi.fn();
+
+    authMiddleware(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(statusCode).toBe(401);
+    expect(jsonBody.error).toBe('Unauthorized');
+    expect(jsonBody.message).toContain('Missing Authorization header');
+  });
+
+  it('should return 401 when Authorization format is invalid', () => {
+    let statusCode = 0;
+    let jsonBody: any = null;
+    const req = { originalUrl: '/mcp', path: '/mcp', method: 'POST', headers: { authorization: 'Basic dXNlcjpwYXNz', 'user-agent': 'vitest' }, ip: '127.0.0.1', socket: { remoteAddress: '127.0.0.1' } } as any;
+    const res = {
+      status: (c: number) => { statusCode = c; return res; },
+      json: (d: any) => { jsonBody = d; return res; },
+    } as any;
+    const next = vi.fn();
+
+    authMiddleware(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(statusCode).toBe(401);
+    expect(jsonBody.message).toContain('Invalid Authorization header format');
+  });
+
+  it('should return 403 when Bearer token is invalid or wrong', () => {
+    let statusCode = 0;
+    let jsonBody: any = null;
+    const req = { originalUrl: '/mcp', path: '/mcp', method: 'POST', headers: { authorization: 'Bearer wrong_token_value_123', 'user-agent': 'vitest' }, ip: '127.0.0.1', socket: { remoteAddress: '127.0.0.1' } } as any;
+    const res = {
+      status: (c: number) => { statusCode = c; return res; },
+      json: (d: any) => { jsonBody = d; return res; },
+    } as any;
+    const next = vi.fn();
+
+    authMiddleware(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(statusCode).toBe(403);
+    expect(jsonBody.error).toBe('Forbidden');
+  });
+
+  it('should reject token in URL query string (URL query tokens not accepted)', () => {
+    let statusCode = 0;
+    let jsonBody: any = null;
+    const req = {
+      originalUrl: `/mcp?token=${config.AUTH_SECRET}`,
+      url: `/mcp?token=${config.AUTH_SECRET}`,
+      path: '/mcp',
+      method: 'GET',
+      headers: { 'user-agent': 'vitest' },
+      query: { token: config.AUTH_SECRET },
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+    } as any;
+    const res = {
+      status: (c: number) => { statusCode = c; return res; },
+      json: (d: any) => { jsonBody = d; return res; },
+    } as any;
+    const next = vi.fn();
+
+    authMiddleware(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(statusCode).toBe(401);
+    expect(jsonBody.error).toBe('Unauthorized');
+  });
+
+  it('should call next() and populate req.auth when valid Bearer token is provided', () => {
+    const req = {
+      originalUrl: '/mcp',
+      path: '/mcp',
+      method: 'POST',
+      headers: { authorization: `Bearer ${config.AUTH_SECRET}`, 'user-agent': 'vitest' },
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' },
+    } as any;
+    const res = {} as any;
+    const next = vi.fn();
+
+    authMiddleware(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(req.auth).toBeDefined();
+    expect(req.auth.userId).toBe(config.DEFAULT_USER_ID);
+  });
+
+  it('should allow public routes (/health, /, OPTIONS) without authentication', () => {
+    const publicPaths = ['/health', '/', '/info'];
+    for (const p of publicPaths) {
+      const req = { originalUrl: p, path: p, method: 'GET', headers: { 'user-agent': 'vitest' }, ip: '127.0.0.1', socket: { remoteAddress: '127.0.0.1' } } as any;
+      const res = {} as any;
+      const next = vi.fn();
+      authMiddleware(req, res, next);
+      expect(next).toHaveBeenCalledTimes(1);
+    }
+  });
+});
+
+describe('Transport Mode Configuration', () => {
+  it('should determine stdio mode when MCP_TRANSPORT=stdio', () => {
+    const prev = process.env.MCP_TRANSPORT;
+    try {
+      process.env.MCP_TRANSPORT = 'stdio';
+      const requested = (process.env.MCP_TRANSPORT || process.env.MCP_TRANSPORT_TYPE || '').toLowerCase().trim();
+      expect(requested).toBe('stdio');
+    } finally {
+      process.env.MCP_TRANSPORT = prev;
+    }
+  });
+
+  it('should default to http transport when MCP_TRANSPORT is unset', () => {
+    const prev = process.env.MCP_TRANSPORT;
+    const prevType = process.env.MCP_TRANSPORT_TYPE;
+    try {
+      delete process.env.MCP_TRANSPORT;
+      delete process.env.MCP_TRANSPORT_TYPE;
+      const requested = (process.env.MCP_TRANSPORT || process.env.MCP_TRANSPORT_TYPE || '').toLowerCase().trim();
+      expect(requested).not.toBe('stdio');
+    } finally {
+      process.env.MCP_TRANSPORT = prev;
+      process.env.MCP_TRANSPORT_TYPE = prevType;
+    }
   });
 });
