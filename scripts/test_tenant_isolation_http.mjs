@@ -155,7 +155,7 @@ async function main() {
     const listRes = await callTool(13, 'list_records', { limit: 50 });
     const userBInList = (listRes.records || []).some(r => r.id === recordBId);
     console.log(`    Total Records in List: ${(listRes.records || []).length}`);
-    console.log(`    User B's record present: ${userBInList ? 'YES (LEAKED!)' : 'NO (STRICTLY ISOLATED)'}`);
+    console.log(`    User B's record present: ${userBInList ? 'YES (LEAKED!)' : 'NO (ISOLATED TO PRINCIPAL)'}`);
     if (userBInList) throw new Error('Tenant isolation failure: list_records returned User B record to unauthenticated caller!');
 
     // 8. Caller omits userId on search_records -> Must not find User B's record
@@ -201,7 +201,7 @@ async function main() {
     recordBId = null; // Cleaned up
 
     console.log('\n' + '='.repeat(70));
-    console.log('HTTP TENANT ISOLATION PROVEN ACROSS ALL MCP TOOLS: ZERO CROSS-TENANT LEAKAGE');
+    console.log('HTTP TENANT ISOLATION PROVEN ACROSS ALL MCP TOOLS: ACCESS SCOPED TO CALLER NAMESPACE');
     console.log('='.repeat(70));
   } finally {
     if (recordBId) {

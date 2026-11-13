@@ -25,6 +25,9 @@
   ],
   "author": "NitroStack & Class1Dev Engineering",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
     "@nitrostack/core": "^1.1.2",

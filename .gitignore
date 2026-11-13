@@ -6,6 +6,7 @@ dist/
 drizzle/
 coverage/
 .venv/
+.venv*/
 __pycache__/
 *.pyc
 
