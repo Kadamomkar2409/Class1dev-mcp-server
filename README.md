@@ -82,12 +82,13 @@ neon-mcp-server/
 │   ├── cleanup_test_records.ts# Neon maintenance utility to wipe test records
 │   ├── scan_secrets.py        # Automated repository secret scanner
 │   ├── test_edge_cases.mjs    # Comprehensive suite verifying edge cases & limits
+│   ├── test_every_tool.mjs    # Comprehensive runner executing all 20 tools with recommended parameters
 │   ├── test_footprint_placeholder.py # Proves all 14 footprint symbols covered
 │   ├── test_restart_persistence.mjs  # Proves cold restart data persistence
 │   ├── test_stdio_handshake.mjs      # Real STDIO transport handshake test
 │   ├── test_tenant_isolation.ts      # Service-level tenant isolation test
 │   ├── test_tenant_isolation_http.mjs# Live HTTP /mcp tenant isolation test
-│   └── verify-e2e.mjs         # End-to-end verification of all 10 tools
+│   └── verify-e2e.mjs         # End-to-end verification of all 20 tools
 ├── src/
 │   ├── config.ts              # Zod-validated environment configuration & defaults
 │   ├── index.ts               # Express bootstrap, Streamable HTTP /mcp, endpoints
@@ -367,6 +368,9 @@ node scripts/test_restart_persistence.mjs
 
 # 8. Run Real STDIO Handshake verification from an external working directory (C:\)
 node scripts/test_stdio_handshake.mjs
+
+# 9. Run all 20 MCP tools with recommended parameters
+node scripts/test_every_tool.mjs
 ```
 
 ---
