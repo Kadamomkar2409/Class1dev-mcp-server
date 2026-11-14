@@ -66,8 +66,8 @@ async function main() {
     };
     if (sessionId) headers['mcp-session-id'] = sessionId;
 
-    // 2. Trigger VALIDATION FAILURE: create_record without required 'title'
-    console.log('\n[1] Triggering Validation Failure on create_record (missing title)...');
+    // 2. Trigger VALIDATION FAILURE: log_budget_policy_override without required 'title'
+    console.log('\n[1] Triggering Validation Failure on log_budget_policy_override (missing title)...');
     const valRes = await fetch(`${BASE_URL}/mcp`, {
       method: 'POST',
       headers,
@@ -76,7 +76,7 @@ async function main() {
         id: 2,
         method: 'tools/call',
         params: {
-          name: 'create_record',
+          name: 'log_budget_policy_override',
           arguments: { description: 'Missing required title parameter' },
         },
       }),
@@ -84,8 +84,8 @@ async function main() {
     const valText = await valRes.text();
     console.log(`    Response received: ${valText.slice(0, 120)}...`);
 
-    // 3. Trigger ENGINE FAILURE: estimate_pr_cost with 20ms timeout
-    console.log('\n[2] Triggering Engine Failure on estimate_pr_cost (simulated timeout)...');
+    // 3. Trigger ENGINE FAILURE: evaluate_pr_cost_risk with 20ms timeout
+    console.log('\n[2] Triggering Engine Failure on evaluate_pr_cost_risk (simulated timeout)...');
     const engRes = await fetch(`${BASE_URL}/mcp`, {
       method: 'POST',
       headers,
@@ -94,7 +94,7 @@ async function main() {
         id: 3,
         method: 'tools/call',
         params: {
-          name: 'estimate_pr_cost',
+          name: 'evaluate_pr_cost_risk',
           arguments: {
             beforeCode: 'import time\ndef f(): pass\n',
             afterCode: 'import time\ndef f(): time.sleep(1)\n',

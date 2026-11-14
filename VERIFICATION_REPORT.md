@@ -42,9 +42,9 @@ Every requirement from the original Phase 0–6 engineering specification, PRD, 
 | **P3c**| Pinned `requirements-class1.txt` | **PASS** | [requirements-class1.txt](file:///E:/Nitrostack/Task%20Third/neon-mcp-server/requirements-class1.txt); pinned `class1==0.1.0`, `numpy==2.4.6`, `pandas==3.1.1`. Verified installs cleanly on Python 3.11. |
 | **P4** | 8 PRD Tools with exact names and schemas | **PASS** | All 8 PRD database & telemetry tools registered in [src/modules/class1/class1.tools.ts](file:///E:/Nitrostack/Task%20Third/neon-mcp-server/src/modules/class1/class1.tools.ts). |
 | **P4** | 2 Class1 Engine Tools (`estimate_pr_cost`, `get_cost_verdict`) | **PASS** | Implemented and verified live over Streamable HTTP ([scripts/verify-e2e.mjs](file:///E:/Nitrostack/Task%20Third/neon-mcp-server/scripts/verify-e2e.mjs)). |
-| **P4** | Dual-Pillar Tool Catalog (20 Tools: 10 FinOps + 10 PRD) | **PASS** | Registered 10 domain FinOps tools alongside the 10 PRD benchmark tools in [src/modules/class1/class1.tools.ts](file:///E:/Nitrostack/Task%20Third/neon-mcp-server/src/modules/class1/class1.tools.ts), verified across STDIO and HTTP. |
+| **P4** | Pure Enterprise AI FinOps Tool Catalog (Option B: 10 Unique Tools) | **PASS** | Registered 10 domain FinOps tools in [src/modules/class1/class1.tools.ts](file:///E:/Nitrostack/Task%20Third/neon-mcp-server/src/modules/class1/class1.tools.ts), eliminating generic CRUD aliases to present a clean, high-value catalog to LLM agents and clients; verified across STDIO and HTTP. |
 | **P4** | Vitest unit test suite | **PASS** | `npm test` passes all 42 unit tests across 3 test suites (`tests/auth-and-error.test.ts`, `tests/tools.test.ts`, `tests/class1-engine.test.ts`). |
-| **P4** | Dual Transport & Working Directory Independence (NitroStudio v1.4.22) | **PASS** | Implemented `MCP_TRANSPORT=stdio` support and working directory independence (resolving `.env`, `.venv`, and `run_class1.py` relative to `import.meta.url`); deep error unwrapping preventing `[object Object]`; verified real handshake from external `cwd: C:\` (`initialize`, `tools/list` discovering all 20 tools, `get_system_status` with `connected: true` and `transport: 'stdio'`, `create_record`, `delete_record`, `estimate_pr_cost`, `evaluate_pr_cost_risk`, `log_budget_policy_override`) in [scripts/test_stdio_handshake.mjs](file:///E:/Nitrostack/Task%20Third/neon-mcp-server/scripts/test_stdio_handshake.mjs). Streamable HTTP layer security (401/403/413/429) verified independently. |
+| **P4** | Dual Transport & Working Directory Independence (NitroStudio v1.4.22) | **PASS** | Implemented `MCP_TRANSPORT=stdio` support and working directory independence (resolving `.env`, `.venv`, and `run_class1.py` relative to `import.meta.url`); deep error unwrapping preventing `[object Object]`; verified real handshake from external `cwd: C:\` (`initialize`, `tools/list` discovering all 10 tools, `get_service_health` with `connected: true` and `transport: 'stdio'`, `log_budget_policy_override`, `delete_governance_record`, and `evaluate_pr_cost_risk`) in [scripts/test_stdio_handshake.mjs](file:///E:/Nitrostack/Task%20Third/neon-mcp-server/scripts/test_stdio_handshake.mjs). Streamable HTTP layer security (401/403/413/429) verified independently. |
 | **P4** | Full upstream Pytest test suite | **NOT VERIFIED** | 462 items discovered across collectable files; 38 test files cannot run (37 fail top-level collection due to unbundled `autobuild`, `blue_book.prices`, and `blue_book.spec`, and `test_autobuild_loop.py` fails 7 fixture setups with `ModuleNotFoundError: No module named 'autobuild'`). Collectable run: 430 passed, 4 failed (1 test fixture path lookup in `test_grades_real.py`, 2 offline dataset fetches in `test_opendata.py`, and 1 unbundled submodule in `test_structured_price.py`), 6 skipped, 23 deselected by `"not footprint"`. None of the failures touch server estimation, recommendation, or policy gating. |
 | **P4** | Multi-tenant namespace isolation over HTTP | **PASS** | [scripts/test_tenant_isolation_http.mjs](file:///E:/Nitrostack/Task%20Third/neon-mcp-server/scripts/test_tenant_isolation_http.mjs); caller cannot read/modify records of other `userId`s within trust domain. |
 | **P4** | Edge cases & resilience verification | **PASS** | [scripts/test_edge_cases.mjs](file:///E:/Nitrostack/Task%20Third/neon-mcp-server/scripts/test_edge_cases.mjs); invalid UUID, missing fields, empty code, oversized, timeouts, rate limits. |
@@ -254,7 +254,7 @@ To support **NitroStudio v1.4.22** (which sends zero authentication headers duri
 - **Stdout Integrity Guarantee:** In STDIO mode, `console.log` is redirected to `console.error` (stderr), ensuring `stdout` contains exclusively valid JSON-RPC 2.0 messages so client JSON parsers never fail.
 - **Working Directory Independence:** All internal paths (`.env`, `.venv` python, and `python/run_class1.py`) are resolved dynamically relative to `import.meta.url` (`PROJECT_ROOT`). The server operates identically whether spawned from `neon-mcp-server/`, `E:\NitroStudio`, `C:\`, or an external runner.
 - **Deep Error Sanitization & Stderr Logging:** Error objects (including WebSocket `ErrorEvent` instances) are deeply unwrapped to extract their true error class and message. Raw error details are logged to `stderr` (visible in NitroStudio's App Canvas log), while client payloads present clean, sanitized error messages that strip database credentials, hosts, and passwords, never serializing to `"[object Object]"`.
-- **Dynamic Active Transport & Uptime:** `get_system_status` dynamically reports the active transport (`stdio` vs `streamable-http`). `uptimeSeconds` reports the continuous Node.js runtime (`process.uptime()`) of the persistent MCP server child process managed by NitroStudio.
+- **Dynamic Active Transport & Uptime:** `get_service_health` dynamically reports the active transport (`stdio` vs `streamable-http`). `uptimeSeconds` reports the continuous Node.js runtime (`process.uptime()`) of the persistent MCP server child process managed by NitroStudio.
 - **No HTTP Port:** No TCP socket or HTTP server is opened in STDIO mode.
 - **HTTP Layer Independence:** The default transport remains `streamable-http` with strict Bearer token authentication, rate limiting, and 1 MB payload limits, fully verified in separate HTTP test suites.
 
@@ -272,17 +272,7 @@ Working Directory: C:\ (External CWD)
     Capabilities:           {"tools":{"listChanged":true},"resources":{"subscribe":true,"listChanged":true},"prompts":{"listChanged":true},"tasks":{"list":{},"cancel":{},"requests":{"tools":{"call":{}}}}}
 
 [2] Sending tools/list request over STDIO stdin...
-    Total Tools Discovered: 20
-     - create_record                 : Create a persistent record in Neon PostgreSQL for Class1Dev AI cost governance
-     - get_record                    : Retrieve a specific record by its unique UUID from Neon PostgreSQL
-     - list_records                  : List Class1Dev records stored in Neon PostgreSQL with pagination (limit and offset) and total count metadata
-     - update_record                 : Update the title, description, or JSONB metadata of an existing record in Neon PostgreSQL by its UUID
-     - delete_record                 : Permanently delete a record by its unique UUID from Neon PostgreSQL
-     - search_records                : Search for records in Neon PostgreSQL matching a query substring across title and description fields
-     - get_database_stats            : Retrieve aggregate database statistics, including total record counts, audit log volume, and action success rates
-     - get_system_status             : Check health and diagnostic status of the NitroStack MCP server and active Neon PostgreSQL connection pool
-     - estimate_pr_cost              : Run the real Class1 cost-risk takeoff engine on before/after code changes to estimate monthly LLM cost impact, calculate tail-risk percentiles (P50/P90/P95), and evaluate budget policy verdicts (BLOCK, WARN, PASS, or NO_BUDGET)
-     - get_cost_verdict              : Retrieve a stored Class1 cost-risk forecast and governance verdict (BLOCK, WARN, PASS, or NO_BUDGET) by record UUID from Neon PostgreSQL
+    Total Tools Discovered: 10
      - evaluate_pr_cost_risk         : Run the real Class1 cost-risk takeoff engine on before/after code changes to estimate monthly LLM cost impact, calculate tail-risk percentiles (P50/P90/P95), and evaluate budget policy verdicts (BLOCK, WARN, PASS, or NO_BUDGET)
      - get_pr_governance_verdict     : Retrieve a stored Class1 cost-risk forecast and governance verdict (BLOCK, WARN, PASS, or NO_BUDGET) by record UUID from Neon PostgreSQL
      - log_budget_policy_override    : Log an authorized budget exception, manual PR override, or cost governance policy record in Neon PostgreSQL
@@ -294,43 +284,33 @@ Working Directory: C:\ (External CWD)
      - get_finops_compliance_metrics : Retrieve aggregate FinOps compliance metrics, including total record counts, audit log volume, and action success rates
      - get_service_health            : Check health and diagnostic status of the NitroStack MCP server and active Neon PostgreSQL connection pool
 
-[3] Calling tool get_system_status over STDIO stdin...
+[3] Calling tool get_service_health over STDIO stdin...
     Overall Status:         HEALTHY
     Database Connected:     true
-    Database Latency:       1043ms
+    Database Latency:       1010ms
     Database Version:       PostgreSQL 18.7 (a21afb5) on aarch64-unknown-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit
     Database Error:         none
     Reported Transport:     stdio
     Process Uptime:         2s
 
-[4] Calling tool create_record over STDIO stdin...
-    Created Record ID:      0d1fe38d-5415-4dd1-afab-77a76f83245c
+[4] Calling tool log_budget_policy_override over STDIO stdin...
+    Created Record ID:      e1339fa7-10c8-4133-8389-5881355a6584
     Title:                  STDIO Working Directory Independence Verification Record
 
-[5] Calling tool delete_record for ID 0d1fe38d-5415-4dd1-afab-77a76f83245c over STDIO stdin...
+[5] Calling tool delete_governance_record for ID e1339fa7-10c8-4133-8389-5881355a6584 over STDIO stdin...
     Delete Result:          {
   "success": true,
-  "id": "0d1fe38d-5415-4dd1-afab-77a76f83245c",
-  "message": "Record 'STDIO Working Directory Independence Verification Record' (0d1fe38d-5415-4dd1-afab-77a76f83245c) was successfully deleted."
+  "id": "e1339fa7-10c8-4133-8389-5881355a6584",
+  "message": "Record 'STDIO Working Directory Independence Verification Record' (e1339fa7-10c8-4133-8389-5881355a6584) was successfully deleted."
 }
 
-[6] Calling tool estimate_pr_cost (real Class1 engine from external CWD) over STDIO stdin...
+[6] Calling tool evaluate_pr_cost_risk (Real Class1 engine from external CWD) over STDIO stdin...
     Modeled Expected:       $2941.23
     Modeled P50:            $1846.25
     Modeled P90:            $6214.11
     Policy Verdict:         BLOCK
     Footprint Status:       DISCLAIMED (PASS)
-    Cleaned up estimate:    0def6db3-943e-40e6-8df8-cf2dce25950a
-
-[7] Calling tool evaluate_pr_cost_risk (Enterprise FinOps Domain Tool) over STDIO stdin...
-    FinOps P90 Delta:       $6214.11
-    FinOps Verdict:         BLOCK
-    FinOps Ledger UUID:     680e18d8-7845-4ed6-916e-5dfa58962bf1
-    Cleaned up FinOps record: 680e18d8-7845-4ed6-916e-5dfa58962bf1
-
-[8] Calling tool log_budget_policy_override (Enterprise FinOps Domain Tool) over STDIO stdin...
-    Override Record ID:     ca47527e-970f-43ae-b756-8d9235374021
-    Cleaned up Override:    ca47527e-970f-43ae-b756-8d9235374021
+    Cleaned up estimate:    73376aae-16b6-436b-98aa-be918b5e2e59
 
 ======================================================================
 REAL STDIO HANDSHAKE WITH EXTERNAL CWD COMPLETE: ALL OPERATIONS PASSED!

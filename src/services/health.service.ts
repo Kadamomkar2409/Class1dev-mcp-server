@@ -5,7 +5,7 @@ import { config } from '../config.js';
 @Injectable()
 export class HealthService {
   /**
-   * 8. get_system_status & /health probe
+   * 10. get_service_health & /health probe
    * Inspects application health, memory, uptime, and live Neon PostgreSQL connectivity.
    */
   async getSystemStatus() {

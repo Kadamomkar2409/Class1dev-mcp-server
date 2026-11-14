@@ -220,9 +220,9 @@ async function main() {
       console.log(`    - ${t.name.padEnd(20)} : ${t.description.split('.')[0]}`);
     }
 
-    // 7. Tool 1: create_record
-    console.log('\n[8] Executing Tool 1: create_record');
-    const createRes = await callMcpTool(5, 'create_record', {
+    // 7. Tool 1: log_budget_policy_override
+    console.log('\n[8] Executing Tool 1: log_budget_policy_override');
+    const createRes = await callMcpTool(5, 'log_budget_policy_override', {
       title: 'Phase 4 Verification Audit Incident',
       description: 'Automated end-to-end integration test record for Class1 verification.',
       metadata: { severity: 'MEDIUM', environment: 'local-test', verified: true },
@@ -232,23 +232,23 @@ async function main() {
     console.log(`   Created Record UUID: ${createdId}`);
     console.log(`   Title:               ${createdRec.title}`);
 
-    // 8. Tool 2: get_record
-    console.log('\n[9] Executing Tool 2: get_record');
-    const getRes = await callMcpTool(6, 'get_record', { id: createdId });
+    // 8. Tool 2: get_governance_record
+    console.log('\n[9] Executing Tool 2: get_governance_record');
+    const getRes = await callMcpTool(6, 'get_governance_record', { id: createdId });
     const getRec = getRes.record || getRes;
     console.log(`   Fetched Record UUID: ${getRec.id}`);
     console.log(`   Title:               ${getRec.title}`);
     console.log(`   Metadata Severity:   ${getRec.metadata?.severity}`);
 
-    // 9. Tool 3: list_records
-    console.log('\n[10] Executing Tool 3: list_records');
-    const listRecsRes = await callMcpTool(7, 'list_records', { limit: 3, offset: 0 });
+    // 9. Tool 3: list_governance_ledger
+    console.log('\n[10] Executing Tool 3: list_governance_ledger');
+    const listRecsRes = await callMcpTool(7, 'list_governance_ledger', { limit: 3, offset: 0 });
     console.log(`   Total Records in Neon: ${listRecsRes.pagination?.total}`);
     console.log(`   Returned Page Size:    ${listRecsRes.records?.length}`);
 
-    // 10. Tool 4: update_record
-    console.log('\n[11] Executing Tool 4: update_record');
-    const updateRes = await callMcpTool(8, 'update_record', {
+    // 10. Tool 4: update_governance_record
+    console.log('\n[11] Executing Tool 4: update_governance_record');
+    const updateRes = await callMcpTool(8, 'update_governance_record', {
       id: createdId,
       title: 'Phase 4 Verification Audit Incident (Updated)',
       description: 'Updated incident record verifying atomic updates and audit logging.',
@@ -257,29 +257,29 @@ async function main() {
     console.log(`   Updated Record UUID: ${updatedRec.id}`);
     console.log(`   New Title:           ${updatedRec.title}`);
 
-    // 11. Tool 6: search_records
-    console.log('\n[12] Executing Tool 6: search_records');
-    const searchRes = await callMcpTool(9, 'search_records', { query: 'Audit Incident' });
+    // 11. Tool 5: audit_pr_cost_history
+    console.log('\n[12] Executing Tool 5: audit_pr_cost_history');
+    const searchRes = await callMcpTool(9, 'audit_pr_cost_history', { query: 'Audit Incident' });
     console.log(`   Query:         "${searchRes.query}"`);
     console.log(`   Results Found: ${searchRes.resultsFound}`);
 
-    // 12. Tool 7: get_database_stats
-    console.log('\n[13] Executing Tool 7: get_database_stats');
-    const statsRes = await callMcpTool(10, 'get_database_stats', {});
+    // 12. Tool 6: get_finops_compliance_metrics
+    console.log('\n[13] Executing Tool 6: get_finops_compliance_metrics');
+    const statsRes = await callMcpTool(10, 'get_finops_compliance_metrics', {});
     const stats = statsRes.statistics;
     console.log(`   Total Records:    ${stats.totalRecords}`);
     console.log(`   Total Audit Logs: ${stats.totalAuditLogs}`);
     console.log(`   Action Stats:     ${stats.recentActions.successful} successful, ${stats.recentActions.failed} failed`);
 
-    // 13. Tool 8: get_system_status
-    console.log('\n[14] Executing Tool 8: get_system_status');
-    const sysRes = await callMcpTool(11, 'get_system_status', {});
-    console.log(`   System Healthy: ${sysRes.healthy ?? sysRes.system?.status ?? 'HEALTHY'}`);
+    // 13. Tool 7: get_service_health
+    console.log('\n[14] Executing Tool 7: get_service_health');
+    const sysRes = await callMcpTool(11, 'get_service_health', {});
+    console.log(`   System Healthy: ${sysRes.healthy ?? sysRes.system?.status ?? sysRes.status ?? 'HEALTHY'}`);
     console.log(`   DB Connected:   ${sysRes.database?.connected}`);
     console.log(`   Pool Latency:   ${sysRes.database?.poolLatencyMs ?? sysRes.database?.latencyMs} ms`);
 
-    // 14. Tool 9: estimate_pr_cost (Real Class1 Cost-Risk Engine)
-    console.log('\n[15] Executing Tool 9: estimate_pr_cost (Real Class1 Engine)');
+    // 14. Tool 8: evaluate_pr_cost_risk (Real Class1 Cost-Risk Engine)
+    console.log('\n[15] Executing Tool 8: evaluate_pr_cost_risk (Real Class1 Engine)');
     const beforeCode = `import openai
 def generate_summary(text: str):
     response = openai.chat.completions.create(
@@ -300,7 +300,7 @@ def generate_summary(text: str):
 `;
 
     const estStart = Date.now();
-    const estRes = await callMcpTool(12, 'estimate_pr_cost', {
+    const estRes = await callMcpTool(12, 'evaluate_pr_cost_risk', {
       beforeCode,
       afterCode,
       path: 'services/llm_summarizer.py',
@@ -329,65 +329,31 @@ def generate_summary(text: str):
 
     const costRecordId = estRes.recordId;
 
-    // 15. Tool 10: get_cost_verdict
-    console.log('\n[16] Executing Tool 10: get_cost_verdict');
-    const verdictRes = await callMcpTool(13, 'get_cost_verdict', { id: costRecordId });
+    // 15. Tool 9: get_pr_governance_verdict
+    console.log('\n[16] Executing Tool 9: get_pr_governance_verdict');
+    const verdictRes = await callMcpTool(13, 'get_pr_governance_verdict', { id: costRecordId });
     console.log(`   Record UUID:    ${verdictRes.recordId}`);
     console.log(`   Title:          ${verdictRes.title}`);
     console.log(`   Verdict:        ${verdictRes.verdict}`);
     console.log(`   Budget P90:     $${verdictRes.budgetP90Usd}`);
     console.log(`   Stored P90:     $${verdictRes.forecast?.p90.toFixed(2)}`);
 
-    // 16. Tool 5: delete_record (Cleanup)
-    console.log('\n[17] Executing Tool 5: delete_record (Cleanup Test Incident)');
-    const deleteRes = await callMcpTool(14, 'delete_record', { id: createdId });
+    // 16. Tool 10: delete_governance_record (Cleanup)
+    console.log('\n[17] Executing Tool 10: delete_governance_record (Cleanup Test Incident)');
+    const deleteRes = await callMcpTool(14, 'delete_governance_record', { id: createdId });
     console.log(`   Cleanup Status: ${deleteRes.message}`);
 
-    // 17. Verify Enterprise AI FinOps Domain Tools
-    console.log('\n[18] Executing Enterprise AI FinOps Domain Tools (evaluate_pr_cost_risk, log_budget_policy_override, get_finops_compliance_metrics)');
-    const finopsEval = await callMcpTool(15, 'evaluate_pr_cost_risk', {
-      beforeCode,
-      afterCode,
-      path: 'services/finops_verifier.py',
-      budgetP90Usd: 8500.0,
-      prNumber: 404,
-      samples: 2000,
-    });
-    console.log(`   FinOps Verdict:           ${finopsEval.verdict}`);
-    console.log(`   FinOps Modeled P90:       $${finopsEval.forecast?.p90?.toFixed(2)} / mo`);
-    console.log(`   FinOps Ledger UUID:       ${finopsEval.recordId}`);
-
-    const finopsVerdict = await callMcpTool(16, 'get_pr_governance_verdict', { id: finopsEval.recordId });
-    console.log(`   Fetched FinOps Verdict:   ${finopsVerdict.verdict} (Budget P90: $${finopsVerdict.budgetP90Usd})`);
-
-    const overrideLog = await callMcpTool(17, 'log_budget_policy_override', {
-      title: 'Tier-1 Service Budget Exception for Black Friday',
-      description: 'Approved by FinOps Director to absorb anticipated peak demand load.',
-      metadata: { approver: 'finops-director', tier: 'P0', expiry: '2026-12-01' },
-    });
-    const overrideRecId = overrideLog.id || overrideLog.record?.id;
-    console.log(`   Logged Budget Override:   ${overrideRecId}`);
-
-    const finopsMetrics = await callMcpTool(18, 'get_finops_compliance_metrics', {});
-    console.log(`   Ledger Records Count:     ${finopsMetrics.statistics?.totalRecords}`);
-    console.log(`   Total Audit Logs:         ${finopsMetrics.statistics?.totalAuditLogs}`);
-
-    // Cleanup FinOps records
-    if (finopsEval.recordId) {
-      await callMcpTool(19, 'delete_governance_record', { id: finopsEval.recordId });
+    if (costRecordId) {
+      await callMcpTool(15, 'delete_governance_record', { id: costRecordId });
     }
-    if (overrideRecId) {
-      await callMcpTool(20, 'delete_governance_record', { id: overrideRecId });
-    }
-    console.log('   Cleaned up temporary FinOps records.');
 
-    // 18. Query live Neon PostgreSQL audit logs
-    console.log('\n[19] Querying Live Neon PostgreSQL Audit Logs...');
+    // 17. Query live Neon PostgreSQL audit logs
+    console.log('\n[18] Querying Live Neon PostgreSQL Audit Logs...');
     const recentLogs = await db
       .select()
       .from(auditLogs)
       .orderBy(desc(auditLogs.createdAt))
-      .limit(15);
+      .limit(12);
 
     console.log('--- RECENT AUDIT LOGS IN LIVE NEON POSTGRESQL ---');
     for (const log of recentLogs) {
@@ -396,7 +362,7 @@ def generate_summary(text: str):
     }
 
     console.log('\n' + '='.repeat(70));
-    console.log('PHASE 4 VERIFICATION COMPLETE: ALL 20 DUAL-FACADE TOOLS & POLICIES PASSED!');
+    console.log('PHASE 4 VERIFICATION COMPLETE: ALL 10 PURE FINOPS TOOLS PASSED!');
     console.log('='.repeat(70));
   } finally {
     console.log('\nShutting down test server...');

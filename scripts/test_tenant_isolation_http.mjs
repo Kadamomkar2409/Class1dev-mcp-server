@@ -122,8 +122,8 @@ async function main() {
     }
 
     // 4. User B creates a confidential record
-    console.log(`\n[3] User B explicitly creates a confidential record via create_record...`);
-    const createB = await callTool(10, 'create_record', {
+    console.log(`\n[3] User B explicitly creates a confidential record via log_budget_policy_override...`);
+    const createB = await callTool(10, 'log_budget_policy_override', {
       userId: tenantBId,
       title: 'Tenant B Secret Financial Model',
       description: 'Confidential corporate strategy exclusively owned by Tenant B.',
@@ -135,39 +135,39 @@ async function main() {
     if (!recordBId) throw new Error('Failed to create Tenant B record');
 
     // 5. Standard Caller (No userId provided -> scopes to Authenticated Principal / User A)
-    console.log(`\n[4] Standard Caller (omitting userId) attempts to GET User B's record...`);
-    const getWithoutUser = await callTool(11, 'get_record', { id: recordBId });
+    console.log(`\n[4] Standard Caller (omitting userId) attempts to GET User B's record via get_governance_record...`);
+    const getWithoutUser = await callTool(11, 'get_governance_record', { id: recordBId });
     console.log(`    Result: ${JSON.stringify(getWithoutUser)}`);
     const isIsolatedGet = getWithoutUser.error === true && getWithoutUser.message.includes('not found');
     console.log(`    Access Denied / Isolated: ${isIsolatedGet ? 'YES (PASS)' : 'LEAK DETECTED (FAIL)'}`);
-    if (!isIsolatedGet) throw new Error('Tenant isolation failure: get_record leaked cross-tenant record without userId!');
+    if (!isIsolatedGet) throw new Error('Tenant isolation failure: get_governance_record leaked cross-tenant record without userId!');
 
     // 6. User A explicitly passes their own userId trying to GET User B's record
     console.log(`\n[5] User A explicitly passes userId=${tenantAId} trying to GET User B's record...`);
-    const getAsUserA = await callTool(12, 'get_record', { id: recordBId, userId: tenantAId });
+    const getAsUserA = await callTool(12, 'get_governance_record', { id: recordBId, userId: tenantAId });
     console.log(`    Result: ${JSON.stringify(getAsUserA)}`);
     const isIsolatedGetA = getAsUserA.error === true && getAsUserA.message.includes('not found');
     console.log(`    Access Denied / Isolated: ${isIsolatedGetA ? 'YES (PASS)' : 'LEAK DETECTED (FAIL)'}`);
     if (!isIsolatedGetA) throw new Error('Tenant isolation failure: User A was able to read User B record!');
 
-    // 7. Caller omits userId on list_records -> Must only see User A's records
-    console.log(`\n[6] Caller omits userId on list_records -> Expect only User A's records...`);
-    const listRes = await callTool(13, 'list_records', { limit: 50 });
+    // 7. Caller omits userId on list_governance_ledger -> Must only see User A's records
+    console.log(`\n[6] Caller omits userId on list_governance_ledger -> Expect only User A's records...`);
+    const listRes = await callTool(13, 'list_governance_ledger', { limit: 50 });
     const userBInList = (listRes.records || []).some(r => r.id === recordBId);
     console.log(`    Total Records in List: ${(listRes.records || []).length}`);
     console.log(`    User B's record present: ${userBInList ? 'YES (LEAKED!)' : 'NO (ISOLATED TO PRINCIPAL)'}`);
-    if (userBInList) throw new Error('Tenant isolation failure: list_records returned User B record to unauthenticated caller!');
+    if (userBInList) throw new Error('Tenant isolation failure: list_governance_ledger returned User B record to unauthenticated caller!');
 
-    // 8. Caller omits userId on search_records -> Must not find User B's record
-    console.log(`\n[7] Caller searches for 'Secret Financial Model' without userId...`);
-    const searchRes = await callTool(14, 'search_records', { query: 'Secret Financial Model' });
+    // 8. Caller omits userId on audit_pr_cost_history -> Must not find User B's record
+    console.log(`\n[7] Caller searches for 'Secret Financial Model' without userId via audit_pr_cost_history...`);
+    const searchRes = await callTool(14, 'audit_pr_cost_history', { query: 'Secret Financial Model' });
     console.log(`    Results found: ${searchRes.resultsFound}`);
     console.log(`    Isolated:      ${searchRes.resultsFound === 0 ? 'YES (PASS)' : 'LEAK DETECTED (FAIL)'}`);
-    if (searchRes.resultsFound > 0) throw new Error('Tenant isolation failure: search_records found User B record without userId!');
+    if (searchRes.resultsFound > 0) throw new Error('Tenant isolation failure: audit_pr_cost_history found User B record without userId!');
 
     // 9. Tamper attempt: Caller tries to UPDATE User B's record as User A
-    console.log(`\n[8] Tamper attempt: Caller attempts to UPDATE User B's record...`);
-    const updateRes = await callTool(15, 'update_record', {
+    console.log(`\n[8] Tamper attempt: Caller attempts to UPDATE User B's record via update_governance_record...`);
+    const updateRes = await callTool(15, 'update_governance_record', {
       id: recordBId,
       userId: tenantAId,
       title: 'Tampered by Malicious Tenant A',
@@ -176,8 +176,8 @@ async function main() {
     console.log(`    Blocked:       ${updateRes.error === true ? 'YES (PASS)' : 'FAIL'}`);
 
     // 10. Tamper attempt: Caller tries to DELETE User B's record as User A
-    console.log(`\n[9] Tamper attempt: Caller attempts to DELETE User B's record...`);
-    const deleteRes = await callTool(16, 'delete_record', {
+    console.log(`\n[9] Tamper attempt: Caller attempts to DELETE User B's record via delete_governance_record...`);
+    const deleteRes = await callTool(16, 'delete_governance_record', {
       id: recordBId,
       userId: tenantAId,
     });
@@ -186,17 +186,17 @@ async function main() {
 
     // 11. Legitimate Access: User B reads, updates, and deletes their own record
     console.log(`\n[10] Legitimate Access: User B retrieves, updates, and deletes own record...`);
-    const legitGet = await callTool(17, 'get_record', { id: recordBId, userId: tenantBId });
+    const legitGet = await callTool(17, 'get_governance_record', { id: recordBId, userId: tenantBId });
     console.log(`    User B GET:    ${legitGet.success ? 'SUCCESS (Title: ' + legitGet.record.title + ')' : 'FAIL'}`);
 
-    const legitUpdate = await callTool(18, 'update_record', {
+    const legitUpdate = await callTool(18, 'update_governance_record', {
       id: recordBId,
       userId: tenantBId,
       title: 'Tenant B Secret Financial Model (Updated by Owner)',
     });
     console.log(`    User B UPDATE: ${legitUpdate.success ? 'SUCCESS (Title: ' + legitUpdate.record.title + ')' : 'FAIL'}`);
 
-    const legitDelete = await callTool(19, 'delete_record', { id: recordBId, userId: tenantBId });
+    const legitDelete = await callTool(19, 'delete_governance_record', { id: recordBId, userId: tenantBId });
     console.log(`    User B DELETE: ${legitDelete.success ? 'SUCCESS (' + legitDelete.message + ')' : 'FAIL'}`);
     recordBId = null; // Cleaned up
 

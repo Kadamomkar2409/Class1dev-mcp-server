@@ -16,9 +16,9 @@ This repository provides a production-grade, locally verified Model Context Prot
   - **STDIO Transport (`MCP_TRANSPORT=stdio`):** Enables direct standard input/output IPC communication for local GUI clients such as **NitroStudio (v1.4.22)**, Claude Desktop, and Cursor. In STDIO mode, no HTTP listener or TCP port is opened, and all logging (`console.log`) is redirected to `stderr`, preserving `stdout` strictly for JSON-RPC 2.0 frames.
 - **Real Class1 Takeoff Engine:** Fully integrated real Python cost engine executing stochastic Monte Carlo simulations and AST static code analysis. Zero synthetic, hardcoded, or invented numbers in completed features.
 - **Persistent Cloud Database:** Neon Serverless PostgreSQL storing users, cost estimate records, and tamper-resistant audit logs via Drizzle ORM.
-- **Dual-Pillar Tool Catalog (20 Tools):** 
-  - **10 Enterprise AI FinOps & Governance Tools:** Domain-tailored tools designed for client presentation, automated CI/CD policy enforcement, and LLM agent steering (`evaluate_pr_cost_risk`, `log_budget_policy_override`, `audit_pr_cost_history`, etc.).
-  - **10 PRD Database & Engine Tools:** The original 8 database/telemetry tools and 2 engine tools (`create_record`, `estimate_pr_cost`, etc.) preserved with 100% backward compatibility for automated benchmark test runners.
+- **Streamlined Pure Enterprise AI FinOps Tool Catalog (10 Unique Tools):** 
+  - Tailored specifically for enterprise client presentation, automated CI/CD policy enforcement, and LLM agent steering (`evaluate_pr_cost_risk`, `get_pr_governance_verdict`, `log_budget_policy_override`, `get_governance_record`, `list_governance_ledger`, `update_governance_record`, `delete_governance_record`, `audit_pr_cost_history`, `get_finops_compliance_metrics`, `get_service_health`).
+  - Streamlined under Option B: generic CRUD tool names were de-registered from the MCP catalog, eliminating confusion and duplication for AI agents (NitroStudio, ChatGPT, Cursor) in favor of high-value FinOps domain actions.
 - **Strict Security & Credential Protection:** `DATABASE_URL`, `AUTH_SECRET`, and `CLASS1_LICENSE_KEY` masked across logs, errors, and git history. Parameterized SQL queries (no string concatenation), safe `child_process.spawn` argument arrays (no shell strings), constant-time authentication, rate limiting, and size-bounded request bodies.
 
 > **Executive Verification Summary:**  
@@ -82,13 +82,13 @@ neon-mcp-server/
 │   ├── cleanup_test_records.ts# Neon maintenance utility to wipe test records
 │   ├── scan_secrets.py        # Automated repository secret scanner
 │   ├── test_edge_cases.mjs    # Comprehensive suite verifying edge cases & limits
-│   ├── test_every_tool.mjs    # Comprehensive runner executing all 20 tools with recommended parameters
+│   ├── test_every_tool.mjs    # Comprehensive runner executing all 10 pure FinOps tools with recommended parameters
 │   ├── test_footprint_placeholder.py # Proves all 14 footprint symbols covered
 │   ├── test_restart_persistence.mjs  # Proves cold restart data persistence
 │   ├── test_stdio_handshake.mjs      # Real STDIO transport handshake test
 │   ├── test_tenant_isolation.ts      # Service-level tenant isolation test
 │   ├── test_tenant_isolation_http.mjs# Live HTTP /mcp tenant isolation test
-│   └── verify-e2e.mjs         # End-to-end verification of all 20 tools
+│   └── verify-e2e.mjs         # End-to-end verification of all 10 pure FinOps tools
 ├── src/
 │   ├── config.ts              # Zod-validated environment configuration & defaults
 │   ├── index.ts               # Express bootstrap, Streamable HTTP /mcp, endpoints
@@ -104,13 +104,13 @@ neon-mcp-server/
 │   ├── modules/
 │   │   └── class1/
 │   │       ├── class1.module.ts # NitroStack module declaration
-│   │       └── class1.tools.ts  # Controller registering all 10 MCP tools
+│   │       └── class1.tools.ts  # Controller registering the 10 pure FinOps MCP tools
 │   ├── services/
 │   │   ├── class1-engine.service.ts # Subprocess manager for Class1 engine
 │   │   ├── health.service.ts        # Database connection & latency probe
 │   │   └── record.service.ts        # Business logic, tenant scoping & audit logs
 │   ├── tools/
-│   │   └── schemas.ts         # Zod schemas and TypeScript types for all 20 tools
+│   │   └── schemas.ts         # Zod schemas and TypeScript types for MCP tools
 │   └── utils/
 │       └── error-handler.ts   # Error sanitization and secret masking utilities
 ├── tests/
@@ -192,35 +192,48 @@ The server supports two distinct operational modes tailored to production/networ
 
 ---
 
-## 6. Complete Dual-Pillar Tool Catalog (20 Tools)
+## 6. Streamlined Enterprise AI FinOps Tool Catalog (10 Unique Tools)
 
-To maximize business value during enterprise client demonstrations (in NitroStudio, ChatGPT, and Cursor) while guaranteeing 100% backward compatibility with automated benchmark evaluation harnesses, the server implements a **Dual-Pillar Tool Architecture**:
+To maximize business value during enterprise client demonstrations (in NitroStudio, ChatGPT, and Cursor) and provide LLM agents with unambiguous domain context, the server implements **Option B: Pure FinOps Architecture (10 Specialized, Non-Overlapping Tools)**:
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                          DUAL-PILLAR MCP ARCHITECTURE & CATALOG                        │
-├──────────────────────────────────────────┬─────────────────────────────────────────────┤
-│ PILLAR 1: ENTERPRISE FINOPS SHOWCASE     │ PILLAR 2: PRD DATABASE & BENCHMARK TOOLS    │
-│ (Client Presentations, CI/CD, Agent UX)  │ (100% Backward Compatibility, Test Runners) │
-├──────────────────────────────────────────┼─────────────────────────────────────────────┤
-│ 1. evaluate_pr_cost_risk                 │ 11. estimate_pr_cost                        │
-│ 2. get_pr_governance_verdict             │ 12. get_cost_verdict                        │
-│ 3. log_budget_policy_override            │ 13. create_record                           │
-│ 4. get_governance_record                 │ 14. get_record                              │
-│ 5. list_governance_ledger                │ 15. list_records                            │
-│ 6. update_governance_record              │ 16. update_record                           │
-│ 7. delete_governance_record              │ 17. delete_record                           │
-│ 8. audit_pr_cost_history                 │ 18. search_records                          │
-│ 9. get_finops_compliance_metrics         │ 19. get_database_stats                      │
-│ 10. get_service_health                   │ 20. get_system_status                       │
-├──────────────────────────────────────────┴─────────────────────────────────────────────┤
+│                   STREAMLINED ENTERPRISE AI FINOPS TOOL CATALOG (10 TOOLS)             │
+├──────────────────────────────┬─────────────────────────────────────────────────────────┤
+│ CATEGORY                     │ SPECIALIZED MCP TOOL & DOMAIN PURPOSE                   │
+├──────────────────────────────┼─────────────────────────────────────────────────────────┤
+│ 1. Cost-Risk Takeoff Engine  │ evaluate_pr_cost_risk                                   │
+│                              │ - 120k Monte Carlo runs on AST code changes             │
+│                              │ - P50/P80/P90/P95 tail-risk forecast & policy verdict   │
+├──────────────────────────────┼─────────────────────────────────────────────────────────┤
+│ 2. Governance Verdict        │ get_pr_governance_verdict                               │
+│                              │ - Retrieve stored forecast, verdict & confidence band   │
+├──────────────────────────────┼─────────────────────────────────────────────────────────┤
+│ 3. Policy & Override Ledger  │ log_budget_policy_override                              │
+│                              │ - Log authorized exception, waiver, or custom policy    │
+│                              │ get_governance_record                                   │
+│                              │ - Fetch single audit record by UUID                     │
+│                              │ list_governance_ledger                                  │
+│                              │ - Paginated inspection of cost governance ledger        │
+│                              │ update_governance_record                                │
+│                              │ - Mutate approver metadata, signoffs, and audit fields  │
+│                              │ delete_governance_record                                │
+│                              │ - Permanently prune obsolete governance records         │
+├──────────────────────────────┼─────────────────────────────────────────────────────────┤
+│ 4. Historical Search & Audit │ audit_pr_cost_history                                   │
+│                              │ - Substring query search across titles and descriptions │
+│                              │ get_finops_compliance_metrics                           │
+│                              │ - Ledger counts, audit log volume, mutation stats       │
+├──────────────────────────────┼─────────────────────────────────────────────────────────┤
+│ 5. Telemetry & Health        │ get_service_health                                      │
+│                              │ - Live Neon PostgreSQL connectivity, latency & memory   │
+├──────────────────────────────┴─────────────────────────────────────────────────────────┤
 │ Shared Service & Security Core: RecordService, HealthService, Class1EngineService      │
 │ Neon PostgreSQL Cloud Persistence (users, records, audit_logs) + Drizzle ORM           │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Pillar 1: Enterprise AI FinOps & Cost Governance Tools (10 Tools)
-Designed specifically for enterprise client showcase, providing LLM agents with explicit semantic context for automated FinOps decisions:
+### The 10 Pure FinOps MCP Tools in Detail
 
 1. **`evaluate_pr_cost_risk`**: Runs the real Class1 cost-risk takeoff engine on before/after code changes to estimate monthly LLM cost impact, calculate tail-risk percentiles (P50/P90/P95), and evaluate budget policy verdicts (`BLOCK`, `WARN`, `PASS`, or `NO_BUDGET`). Persists the forecast and full text report to Neon PostgreSQL.  
    - Inputs: `beforeCode` (string, req), `afterCode` (string, req), `path` (string, req), `budgetP90Usd` (number, opt), `prNumber` (int, opt), `repo` (string, opt), `samples` (int, opt, default 1,000), `userId` (uuid, opt).
@@ -242,30 +255,6 @@ Designed specifically for enterprise client showcase, providing LLM agents with 
    - Inputs: `userId` (uuid, opt).
 10. **`get_service_health`**: Checks health and diagnostic status of the NitroStack MCP server and active Neon PostgreSQL connection pool.  
     - Inputs: None.
-
-### Pillar 2: PRD Baseline & Benchmark Tools (10 Tools)
-Preserved with exact parameter signatures and return structures for automated test runners and grading benchmarks:
-
-11. **`create_record`**: Creates a persistent AI cost governance record in Neon PostgreSQL.  
-    - Inputs: `title` (string, req), `description` (string, opt), `metadata` (object, opt), `userId` (uuid, opt).
-12. **`get_record`**: Retrieves a record by UUID. Enforces tenant isolation.  
-    - Inputs: `id` (uuid, req), `userId` (uuid, opt).
-13. **`list_records`**: Paginated list of records. Scoped to authenticated principal by default.  
-    - Inputs: `limit` (int, opt), `offset` (int, opt), `userId` (uuid, opt).
-14. **`update_record`**: Updates title, description, or metadata of an existing record. Requires record ownership.  
-    - Inputs: `id` (uuid, req), `title` (string, opt), `description` (string, opt), `metadata` (object, opt), `userId` (uuid, opt).
-15. **`delete_record`**: Permanently removes a record from Neon PostgreSQL. Requires record ownership.  
-    - Inputs: `id` (uuid, req), `userId` (uuid, opt).
-16. **`search_records`**: Case-insensitive substring search across titles and descriptions. Scoped to tenant.  
-    - Inputs: `query` (string, req), `limit` (int, opt), `userId` (uuid, opt).
-17. **`get_database_stats`**: Aggregated counts, storage volume, and activity stats from Neon PostgreSQL.  
-    - Inputs: `userId` (uuid, opt).
-18. **`get_system_status`**: Diagnostic telemetry including database latency, uptime, memory, and environment.  
-    - Inputs: None.
-19. **`estimate_pr_cost`**: Executes the real Class1 cost-risk takeoff engine on `beforeCode` and `afterCode`.  
-    - Inputs: `beforeCode` (string, req), `afterCode` (string, req), `path` (string, req), `budgetP90Usd` (number, opt), `prNumber` (int, opt), `repo` (string, opt), `samples` (int, opt), `userId` (uuid, opt).
-20. **`get_cost_verdict`**: Retrieves a previously evaluated Class1 cost estimate and governance verdict by UUID.  
-    - Inputs: `id` (uuid, req), `userId` (uuid, opt).
 
 ---
 
@@ -360,7 +349,7 @@ node scripts/test_tenant_isolation_http.mjs
 # 5. Run Edge Cases & Resilience verification suite
 node scripts/test_edge_cases.mjs
 
-# 6. Run End-to-End verification across all 20 MCP tools
+# 6. Run End-to-End verification across all 10 pure FinOps MCP tools
 node scripts/verify-e2e.mjs
 
 # 7. Run Cold Restart Persistence verification
@@ -369,7 +358,7 @@ node scripts/test_restart_persistence.mjs
 # 8. Run Real STDIO Handshake verification from an external working directory (C:\)
 node scripts/test_stdio_handshake.mjs
 
-# 9. Run all 20 MCP tools with recommended parameters
+# 9. Run all 10 pure FinOps MCP tools with recommended parameters
 node scripts/test_every_tool.mjs
 ```
 
@@ -399,4 +388,4 @@ To connect **NitroStudio (v1.4.22)** or other local desktop clients (Claude Desk
      - `DATABASE_URL=<your_neon_database_url>`
      - `AUTH_SECRET=<your_auth_secret>`
      - `PYTHONUTF8=1`
-4. Connect: Studio immediately initializes, discovers all 20 tools (the 10 Enterprise AI FinOps tools and the 10 PRD tools), displays their interactive forms on the App Canvas, and enables live execution without HTTP 401 errors.
+4. Connect: Studio immediately initializes, discovers all 10 pure Enterprise AI FinOps tools, displays their interactive forms on the App Canvas, and enables live execution without HTTP 401 errors.

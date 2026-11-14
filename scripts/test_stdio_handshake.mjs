@@ -85,14 +85,14 @@ async function runStdioHandshake() {
     const tools = toolsRes.result?.tools || [];
     console.log(`    Total Tools Discovered: ${tools.length}`);
     tools.forEach((t) => console.log(`     - ${t.name.padEnd(30)}: ${t.description.split('.')[0]}`));
-    if (tools.length !== 20) {
-      throw new Error(`Expected 20 tools (10 FinOps + 10 PRD), got ${tools.length}`);
+    if (tools.length !== 10) {
+      throw new Error(`Expected 10 tools, got ${tools.length}`);
     }
 
-    // 3. tools/call -> get_system_status
-    console.log('\n[3] Calling tool get_system_status over STDIO stdin...');
+    // 3. tools/call -> get_service_health
+    console.log('\n[3] Calling tool get_service_health over STDIO stdin...');
     const healthRes = await sendRequest('tools/call', {
-      name: 'get_system_status',
+      name: 'get_service_health',
       arguments: {},
     });
     const healthText = healthRes.result?.content?.[0]?.text;
@@ -106,18 +106,19 @@ async function runStdioHandshake() {
     console.log('    Process Uptime:        ', `${healthData.uptimeSeconds}s`);
 
     if (healthData.database?.connected !== true) {
-      throw new Error(`get_system_status reported database.connected=false: ${healthData.database?.error}`);
+      throw new Error(`get_service_health reported database.connected=false: ${healthData.database?.error}`);
     }
     if (healthData.transport !== 'stdio') {
       throw new Error(`Expected transport to be 'stdio', got '${healthData.transport}'`);
     }
 
-    // 4. tools/call -> create_record
-    console.log('\n[4] Calling tool create_record over STDIO stdin...');
+    // 4. tools/call -> log_budget_policy_override
+    console.log('\n[4] Calling tool log_budget_policy_override over STDIO stdin...');
     const createRes = await sendRequest('tools/call', {
-      name: 'create_record',
+      name: 'log_budget_policy_override',
       arguments: {
         title: 'STDIO Working Directory Independence Verification Record',
+        description: 'Verified over STDIO transport from an external working directory.',
         metadata: { mode: 'stdio', cwd: TEST_CWD, timestamp: new Date().toISOString() },
       },
     });
@@ -126,23 +127,23 @@ async function runStdioHandshake() {
     const recordId = createdData.id || createdData.record?.id;
     console.log(`    Created Record ID:      ${recordId}`);
     console.log(`    Title:                  ${createdData.title || createdData.record?.title}`);
-    if (!recordId) throw new Error('create_record failed to return a valid UUID over STDIO');
+    if (!recordId) throw new Error('log_budget_policy_override failed to return a valid UUID over STDIO');
 
-    // 5. tools/call -> delete_record
-    console.log(`\n[5] Calling tool delete_record for ID ${recordId} over STDIO stdin...`);
+    // 5. tools/call -> delete_governance_record
+    console.log(`\n[5] Calling tool delete_governance_record for ID ${recordId} over STDIO stdin...`);
     const deleteRes = await sendRequest('tools/call', {
-      name: 'delete_record',
+      name: 'delete_governance_record',
       arguments: { id: recordId },
     });
     const deleteText = deleteRes.result?.content?.[0]?.text;
     console.log(`    Delete Result:          ${deleteText}`);
 
-    // 6. tools/call -> estimate_pr_cost (PRD tool)
-    console.log('\n[6] Calling tool estimate_pr_cost (real Class1 engine from external CWD) over STDIO stdin...');
+    // 6. tools/call -> evaluate_pr_cost_risk (Real Class1 Engine from external CWD)
+    console.log('\n[6] Calling tool evaluate_pr_cost_risk (Real Class1 engine from external CWD) over STDIO stdin...');
     const beforeCode = `import openai\nclient = openai.OpenAI()\nresp = client.chat.completions.create(model='gpt-4o-mini', max_tokens=500)\n`;
     const afterCode = `import openai\nclient = openai.OpenAI()\nresp = client.chat.completions.create(model='gpt-4o', max_tokens=2000)\n`;
     const estimateRes = await sendRequest('tools/call', {
-      name: 'estimate_pr_cost',
+      name: 'evaluate_pr_cost_risk',
       arguments: {
         beforeCode,
         afterCode,
@@ -162,60 +163,10 @@ async function runStdioHandshake() {
 
     if (estimateData.recordId) {
       await sendRequest('tools/call', {
-        name: 'delete_record',
+        name: 'delete_governance_record',
         arguments: { id: estimateData.recordId },
       });
       console.log(`    Cleaned up estimate:    ${estimateData.recordId}`);
-    }
-
-    // 7. tools/call -> evaluate_pr_cost_risk (Enterprise FinOps domain tool)
-    console.log('\n[7] Calling tool evaluate_pr_cost_risk (Enterprise FinOps Domain Tool) over STDIO stdin...');
-    const finopsRes = await sendRequest('tools/call', {
-      name: 'evaluate_pr_cost_risk',
-      arguments: {
-        beforeCode,
-        afterCode,
-        path: 'services/finops_stdio_test.py',
-        prNumber: 1001,
-        budgetP90Usd: 6000,
-        samples: 1000,
-      },
-    });
-    const finopsText = finopsRes.result?.content?.[0]?.text;
-    const finopsData = JSON.parse(finopsText || '{}');
-    console.log(`    FinOps P90 Delta:       $${finopsData.forecast?.p90?.toFixed(2)}`);
-    console.log(`    FinOps Verdict:         ${finopsData.verdict}`);
-    console.log(`    FinOps Ledger UUID:     ${finopsData.recordId}`);
-
-    if (finopsData.recordId) {
-      await sendRequest('tools/call', {
-        name: 'delete_governance_record',
-        arguments: { id: finopsData.recordId },
-      });
-      console.log(`    Cleaned up FinOps record: ${finopsData.recordId}`);
-    }
-
-    // 8. tools/call -> log_budget_policy_override (Enterprise FinOps domain tool)
-    console.log('\n[8] Calling tool log_budget_policy_override (Enterprise FinOps Domain Tool) over STDIO stdin...');
-    const overrideRes = await sendRequest('tools/call', {
-      name: 'log_budget_policy_override',
-      arguments: {
-        title: 'Emergency Release Budget Override',
-        description: 'Approved for urgent hotfix deployment',
-        metadata: { approver: 'finops-lead', tier: 'P0' },
-      },
-    });
-    const overrideText = overrideRes.result?.content?.[0]?.text;
-    const overrideData = JSON.parse(overrideText || '{}');
-    const overrideId = overrideData.id || overrideData.record?.id;
-    console.log(`    Override Record ID:     ${overrideId}`);
-
-    if (overrideId) {
-      await sendRequest('tools/call', {
-        name: 'delete_governance_record',
-        arguments: { id: overrideId },
-      });
-      console.log(`    Cleaned up Override:    ${overrideId}`);
     }
 
     console.log('\n' + '='.repeat(70));

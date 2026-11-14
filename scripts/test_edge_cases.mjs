@@ -109,9 +109,9 @@ async function main() {
     const beforeCode = `import openai\ndef call(): return openai.chat.completions.create(model='gpt-4o-mini', max_tokens=200)\n`;
     const afterCode = `import openai\ndef call(): return openai.chat.completions.create(model='gpt-4o', max_tokens=1000)\n`;
 
-    // 1. estimate_pr_cost with budget below P90 (BLOCK)
-    console.log('\n[Case 1] estimate_pr_cost with low budget ($1,000 < P90 ~$3,933) -> Expect BLOCK');
-    const blockRes = await callTool(101, 'estimate_pr_cost', {
+    // 1. evaluate_pr_cost_risk with budget below P90 (BLOCK)
+    console.log('\n[Case 1] evaluate_pr_cost_risk with low budget ($1,000 < P90 ~$3,933) -> Expect BLOCK');
+    const blockRes = await callTool(101, 'evaluate_pr_cost_risk', {
       beforeCode,
       afterCode,
       path: 'services/edge_test.py',
@@ -123,9 +123,9 @@ async function main() {
     console.log(`   Verdict:   ${blockRes.verdict} (Verified BLOCK: P90 > budget)`);
     if (blockRes.recordId || blockRes.record?.id) createdRecordIds.push(blockRes.recordId || blockRes.record?.id);
 
-    // 2. estimate_pr_cost with high budget (PASS)
-    console.log('\n[Case 2] estimate_pr_cost with high budget ($15,000) -> Expect PASS');
-    const passRes = await callTool(102, 'estimate_pr_cost', {
+    // 2. evaluate_pr_cost_risk with high budget (PASS)
+    console.log('\n[Case 2] evaluate_pr_cost_risk with high budget ($15,000) -> Expect PASS');
+    const passRes = await callTool(102, 'evaluate_pr_cost_risk', {
       beforeCode,
       afterCode,
       path: 'services/edge_test.py',
@@ -137,9 +137,9 @@ async function main() {
     console.log(`   Verdict:   ${passRes.verdict} (Verified PASS: P90 < 0.8 * budget)`);
     if (passRes.recordId || passRes.record?.id) createdRecordIds.push(passRes.recordId || passRes.record?.id);
 
-    // 3. estimate_pr_cost with no budget (NO_BUDGET)
-    console.log('\n[Case 3] estimate_pr_cost with NO budget specified -> Expect NO_BUDGET');
-    const noBudgetRes = await callTool(103, 'estimate_pr_cost', {
+    // 3. evaluate_pr_cost_risk with no budget (NO_BUDGET)
+    console.log('\n[Case 3] evaluate_pr_cost_risk with NO budget specified -> Expect NO_BUDGET');
+    const noBudgetRes = await callTool(103, 'evaluate_pr_cost_risk', {
       beforeCode,
       afterCode,
       path: 'services/edge_test.py',
@@ -151,18 +151,18 @@ async function main() {
     if (noBudgetRes.recordId || noBudgetRes.record?.id) createdRecordIds.push(noBudgetRes.recordId || noBudgetRes.record?.id);
 
     // 4. Invalid UUID
-    console.log('\n[Case 4] Invalid UUID format in get_record -> Expect sanitized validation error');
-    const invalidUuidRes = await callTool(104, 'get_record', { id: 'not-a-valid-uuid-string' });
+    console.log('\n[Case 4] Invalid UUID format in get_governance_record -> Expect sanitized validation error');
+    const invalidUuidRes = await callTool(104, 'get_governance_record', { id: 'not-a-valid-uuid-string' });
     console.log(`   Error Response: ${JSON.stringify(invalidUuidRes)}`);
 
     // 5. Missing required field
-    console.log('\n[Case 5] Missing required "title" in create_record -> Expect sanitized validation error');
-    const missingFieldRes = await callTool(105, 'create_record', { description: 'Missing required title' });
+    console.log('\n[Case 5] Missing required "title" in log_budget_policy_override -> Expect sanitized validation error');
+    const missingFieldRes = await callTool(105, 'log_budget_policy_override', { description: 'Missing required title' });
     console.log(`   Error Response: ${JSON.stringify(missingFieldRes)}`);
 
     // 6. Empty beforeCode
-    console.log('\n[Case 6] Empty beforeCode in estimate_pr_cost -> Expect schema validation error');
-    const emptyCodeRes = await callTool(106, 'estimate_pr_cost', {
+    console.log('\n[Case 6] Empty beforeCode in evaluate_pr_cost_risk -> Expect schema validation error');
+    const emptyCodeRes = await callTool(106, 'evaluate_pr_cost_risk', {
       beforeCode: '',
       afterCode: 'print(1)',
       path: 'app.py',
@@ -179,7 +179,7 @@ async function main() {
         id: 107,
         method: 'tools/call',
         params: {
-          name: 'estimate_pr_cost',
+          name: 'evaluate_pr_cost_risk',
           arguments: {
             beforeCode: 'x'.repeat(1_050_000),
             afterCode: 'print(1)',
@@ -208,14 +208,14 @@ async function main() {
       console.log(`   Simulated Timeout Error: ${err.message}`);
     }
 
-    // 9. get_record after delete
-    console.log('\n[Case 9] get_record after record is deleted -> Expect clean NOT FOUND');
-    const tempRec = await callTool(109, 'create_record', { title: 'Temporary Record to Delete' });
+    // 9. get_governance_record after delete
+    console.log('\n[Case 9] get_governance_record after record is deleted -> Expect clean NOT FOUND');
+    const tempRec = await callTool(109, 'log_budget_policy_override', { title: 'Temporary Record to Delete' });
     const tempRecId = tempRec.record?.id || tempRec.id;
     console.log(`   Created Record: ${tempRecId}`);
-    const delRes = await callTool(110, 'delete_record', { id: tempRecId });
+    const delRes = await callTool(110, 'delete_governance_record', { id: tempRecId });
     console.log(`   Deleted Record: ${delRes.message || JSON.stringify(delRes)}`);
-    const getAfterDeleteRes = await callTool(111, 'get_record', { id: tempRecId });
+    const getAfterDeleteRes = await callTool(111, 'get_governance_record', { id: tempRecId });
     console.log(`   GET after delete response: ${JSON.stringify(getAfterDeleteRes)}`);
 
     // 10. Rate limiting: Burst /mcp and verify /health exemption

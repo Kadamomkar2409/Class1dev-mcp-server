@@ -91,8 +91,8 @@ async function main() {
     };
     if (sessionId) headers['mcp-session-id'] = sessionId;
 
-    // Call list_records
-    console.log('\n[2] Calling list_records over POST /mcp after restart...');
+    // Call list_governance_ledger
+    console.log('\n[2] Calling list_governance_ledger over POST /mcp after restart...');
     const listRes = await fetch(`${BASE_URL}/mcp`, {
       method: 'POST',
       headers,
@@ -100,7 +100,7 @@ async function main() {
         jsonrpc: '2.0',
         id: 2,
         method: 'tools/call',
-        params: { name: 'list_records', arguments: { limit: 5, offset: 0 } },
+        params: { name: 'list_governance_ledger', arguments: { limit: 5, offset: 0 } },
       }),
     });
     const listData = unwrapToolResult(parseMcpPayload(await listRes.text()));
@@ -110,8 +110,8 @@ async function main() {
       console.log(`     - [${r.id}] ${r.title} (Created: ${r.createdAt})`);
     }
 
-    // Call get_record on the initial seed record (00000000-0000-0000-0000-000000000010)
-    console.log('\n[3] Calling get_record on the initial seed record (00000000-0000-0000-0000-000000000010)...');
+    // Call get_governance_record on the initial seed record (00000000-0000-0000-0000-000000000010)
+    console.log('\n[3] Calling get_governance_record on the initial seed record (00000000-0000-0000-0000-000000000010)...');
     const seedGetRes = await fetch(`${BASE_URL}/mcp`, {
       method: 'POST',
       headers,
@@ -119,7 +119,7 @@ async function main() {
         jsonrpc: '2.0',
         id: 3,
         method: 'tools/call',
-        params: { name: 'get_record', arguments: { id: '00000000-0000-0000-0000-000000000010' } },
+        params: { name: 'get_governance_record', arguments: { id: '00000000-0000-0000-0000-000000000010' } },
       }),
     });
     const seedData = unwrapToolResult(parseMcpPayload(await seedGetRes.text()));
