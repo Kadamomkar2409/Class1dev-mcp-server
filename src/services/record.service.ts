@@ -61,7 +61,7 @@ export class RecordService {
 
       await this.logAudit({
         userId,
-        toolName: 'create_record',
+        toolName: 'log_budget_policy_override',
         action: 'CREATE',
         status: 'SUCCESS',
         metadata: { recordId: created.id, title: created.title },
@@ -72,7 +72,7 @@ export class RecordService {
       const safeError = sanitizeErrorMessage(err);
       await this.logAudit({
         userId,
-        toolName: 'create_record',
+        toolName: 'log_budget_policy_override',
         action: 'CREATE',
         status: 'ERROR',
         metadata: { error: safeError, attemptedTitle: input.title },
@@ -114,7 +114,7 @@ export class RecordService {
 
       await this.logAudit({
         userId,
-        toolName: 'get_record',
+        toolName: 'get_governance_record',
         action: 'READ',
         status: record ? 'SUCCESS' : 'NOT_FOUND',
         metadata: { recordId: id, filteredByUser: !!userId },
@@ -125,7 +125,7 @@ export class RecordService {
       const safeError = sanitizeErrorMessage(err);
       await this.logAudit({
         userId,
-        toolName: 'get_record',
+        toolName: 'get_governance_record',
         action: 'READ',
         status: 'ERROR',
         metadata: { recordId: id, error: safeError },
@@ -170,7 +170,7 @@ export class RecordService {
 
       await this.logAudit({
         userId,
-        toolName: 'list_records',
+        toolName: 'list_governance_ledger',
         action: 'LIST',
         status: 'SUCCESS',
         metadata: { count: items.length, total, limit, offset },
@@ -189,7 +189,7 @@ export class RecordService {
       const safeError = sanitizeErrorMessage(err);
       await this.logAudit({
         userId,
-        toolName: 'list_records',
+        toolName: 'list_governance_ledger',
         action: 'LIST',
         status: 'ERROR',
         metadata: { error: safeError },
@@ -216,7 +216,7 @@ export class RecordService {
       if (!existing) {
         await this.logAudit({
           userId: requestingUserId,
-          toolName: 'update_record',
+          toolName: 'update_governance_record',
           action: 'UPDATE',
           status: 'ERROR',
           metadata: { recordId: input.id, error: 'Record not found' },
@@ -228,7 +228,7 @@ export class RecordService {
       if (existing.userId !== requestingUserId) {
         await this.logAudit({
           userId: requestingUserId,
-          toolName: 'update_record',
+          toolName: 'update_governance_record',
           action: 'UPDATE',
           status: 'ERROR',
           metadata: { recordId: input.id, error: 'Tenant isolation: cross-user modification rejected' },
@@ -252,7 +252,7 @@ export class RecordService {
 
       await this.logAudit({
         userId: updated.userId,
-        toolName: 'update_record',
+        toolName: 'update_governance_record',
         action: 'UPDATE',
         status: 'SUCCESS',
         metadata: { recordId: updated.id, updatedFields: Object.keys(updateData) },
@@ -264,7 +264,7 @@ export class RecordService {
       if (!(err instanceof Error && err.message.includes('Record with ID') || err instanceof Error && err.message.includes('Unauthorized'))) {
         await this.logAudit({
           userId: requestingUserId,
-          toolName: 'update_record',
+          toolName: 'update_governance_record',
           action: 'UPDATE',
           status: 'ERROR',
           metadata: { recordId: input.id, error: safeError },
@@ -292,7 +292,7 @@ export class RecordService {
       if (!existing) {
         await this.logAudit({
           userId: requestingUserId,
-          toolName: 'delete_record',
+          toolName: 'delete_governance_record',
           action: 'DELETE',
           status: 'ERROR',
           metadata: { recordId: id, error: 'Record not found' },
@@ -304,7 +304,7 @@ export class RecordService {
       if (existing.userId !== requestingUserId) {
         await this.logAudit({
           userId: requestingUserId,
-          toolName: 'delete_record',
+          toolName: 'delete_governance_record',
           action: 'DELETE',
           status: 'ERROR',
           metadata: { recordId: id, error: 'Tenant isolation: cross-user deletion rejected' },
@@ -318,7 +318,7 @@ export class RecordService {
 
       await this.logAudit({
         userId: existing.userId,
-        toolName: 'delete_record',
+        toolName: 'delete_governance_record',
         action: 'DELETE',
         status: 'SUCCESS',
         metadata: { recordId: existing.id, title: existing.title },
@@ -334,7 +334,7 @@ export class RecordService {
       if (!(err instanceof Error && err.message.includes('Record with ID') || err instanceof Error && err.message.includes('Unauthorized'))) {
         await this.logAudit({
           userId: requestingUserId,
-          toolName: 'delete_record',
+          toolName: 'delete_governance_record',
           action: 'DELETE',
           status: 'ERROR',
           metadata: { recordId: id, error: safeError },
@@ -370,7 +370,7 @@ export class RecordService {
 
       await this.logAudit({
         userId,
-        toolName: 'search_records',
+        toolName: 'audit_pr_cost_history',
         action: 'SEARCH',
         status: 'SUCCESS',
         metadata: { query: input.query, resultsFound: matching.length },
@@ -385,7 +385,7 @@ export class RecordService {
       const safeError = sanitizeErrorMessage(err);
       await this.logAudit({
         userId,
-        toolName: 'search_records',
+        toolName: 'audit_pr_cost_history',
         action: 'SEARCH',
         status: 'ERROR',
         metadata: { query: input.query, error: safeError },
@@ -395,7 +395,7 @@ export class RecordService {
   }
 
   /**
-   * 7. get_database_stats
+   * 7. get_finops_compliance_metrics (PRD alias: get_database_stats)
    * Provides database aggregates, table counts, and recent activity metrics.
    * Scoped to authenticated principal (DEFAULT_USER_ID) by default.
    */
@@ -422,7 +422,7 @@ export class RecordService {
 
       await this.logAudit({
         userId,
-        toolName: 'get_database_stats',
+        toolName: 'get_finops_compliance_metrics',
         action: 'STATS',
         status: 'SUCCESS',
         metadata: { filteredByUser: !!userId },
@@ -442,7 +442,7 @@ export class RecordService {
       const safeError = sanitizeErrorMessage(err);
       await this.logAudit({
         userId,
-        toolName: 'get_database_stats',
+        toolName: 'get_finops_compliance_metrics',
         action: 'STATS',
         status: 'ERROR',
         metadata: { error: safeError },
