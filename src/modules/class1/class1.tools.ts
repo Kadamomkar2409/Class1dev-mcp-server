@@ -23,6 +23,26 @@ import {
   GetDatabaseStatsArgs,
   EstimatePrCostArgs,
   GetCostVerdictArgs,
+  EvaluatePrCostRiskSchema,
+  GetPrGovernanceVerdictSchema,
+  LogBudgetPolicyOverrideSchema,
+  GetGovernanceRecordSchema,
+  ListGovernanceLedgerSchema,
+  UpdateGovernanceRecordSchema,
+  DeleteGovernanceRecordSchema,
+  AuditPrCostHistorySchema,
+  GetFinopsComplianceMetricsSchema,
+  GetServiceHealthSchema,
+  EvaluatePrCostRiskArgs,
+  GetPrGovernanceVerdictArgs,
+  LogBudgetPolicyOverrideArgs,
+  GetGovernanceRecordArgs,
+  ListGovernanceLedgerArgs,
+  UpdateGovernanceRecordArgs,
+  DeleteGovernanceRecordArgs,
+  AuditPrCostHistoryArgs,
+  GetFinopsComplianceMetricsArgs,
+  GetServiceHealthArgs,
 } from '../../tools/schemas.js';
 
 /**
@@ -293,5 +313,99 @@ export class Class1Tools {
     } catch (err) {
       return formatToolError('get_cost_verdict', err, 'Ensure the record UUID exists and corresponds to a cost estimate.');
     }
+  }
+
+  // ============================================================================
+  // Enterprise AI FinOps & Governance Toolset (Domain Showcase)
+  // ============================================================================
+
+  @Tool({
+    name: 'evaluate_pr_cost_risk',
+    description: 'Run the real Class1 cost-risk takeoff engine on before/after code changes to estimate monthly LLM cost impact, calculate tail-risk percentiles (P50/P90/P95), and evaluate budget policy verdicts (BLOCK, WARN, PASS, or NO_BUDGET). Persists the forecast and full text report to Neon PostgreSQL.',
+    inputSchema: EvaluatePrCostRiskSchema,
+  })
+  async evaluatePrCostRisk(args: EvaluatePrCostRiskArgs, ctx: ExecutionContext) {
+    return this.estimatePrCost(args, ctx);
+  }
+
+  @Tool({
+    name: 'get_pr_governance_verdict',
+    description: 'Retrieve a stored Class1 cost-risk forecast and governance verdict (BLOCK, WARN, PASS, or NO_BUDGET) by record UUID from Neon PostgreSQL.',
+    inputSchema: GetPrGovernanceVerdictSchema,
+  })
+  async getPrGovernanceVerdict(args: GetPrGovernanceVerdictArgs, ctx: ExecutionContext) {
+    return this.getCostVerdict(args, ctx);
+  }
+
+  @Tool({
+    name: 'log_budget_policy_override',
+    description: 'Log an authorized budget exception, manual PR override, or cost governance policy record in Neon PostgreSQL. Saves title, description, and metadata JSONB, returning the created record with UUID.',
+    inputSchema: LogBudgetPolicyOverrideSchema,
+  })
+  async logBudgetPolicyOverride(args: LogBudgetPolicyOverrideArgs, ctx: ExecutionContext) {
+    return this.createRecord(args, ctx);
+  }
+
+  @Tool({
+    name: 'get_governance_record',
+    description: 'Retrieve a specific cost governance or policy override record by its unique UUID from Neon PostgreSQL. Returns record attributes and timestamps.',
+    inputSchema: GetGovernanceRecordSchema,
+  })
+  async getGovernanceRecord(args: GetGovernanceRecordArgs, ctx: ExecutionContext) {
+    return this.getRecord(args, ctx);
+  }
+
+  @Tool({
+    name: 'list_governance_ledger',
+    description: 'List historical Class1Dev cost governance records stored in Neon PostgreSQL with pagination (limit and offset) and total count metadata.',
+    inputSchema: ListGovernanceLedgerSchema,
+  })
+  async listGovernanceLedger(args: ListGovernanceLedgerArgs, ctx: ExecutionContext) {
+    return this.listRecords(args, ctx);
+  }
+
+  @Tool({
+    name: 'update_governance_record',
+    description: 'Update the title, description, or JSONB metadata of an existing cost governance record in Neon PostgreSQL by its UUID.',
+    inputSchema: UpdateGovernanceRecordSchema,
+  })
+  async updateGovernanceRecord(args: UpdateGovernanceRecordArgs, ctx: ExecutionContext) {
+    return this.updateRecord(args, ctx);
+  }
+
+  @Tool({
+    name: 'delete_governance_record',
+    description: 'Permanently remove a cost governance record by its unique UUID from Neon PostgreSQL. Returns deletion confirmation status.',
+    inputSchema: DeleteGovernanceRecordSchema,
+  })
+  async deleteGovernanceRecord(args: DeleteGovernanceRecordArgs, ctx: ExecutionContext) {
+    return this.deleteRecord(args, ctx);
+  }
+
+  @Tool({
+    name: 'audit_pr_cost_history',
+    description: 'Search for historical cost governance records in Neon PostgreSQL matching a query substring across title and description fields.',
+    inputSchema: AuditPrCostHistorySchema,
+  })
+  async auditPrCostHistory(args: AuditPrCostHistoryArgs, ctx: ExecutionContext) {
+    return this.searchRecords(args, ctx);
+  }
+
+  @Tool({
+    name: 'get_finops_compliance_metrics',
+    description: 'Retrieve aggregate FinOps compliance metrics, including total record counts, audit log volume, and action success rates.',
+    inputSchema: GetFinopsComplianceMetricsSchema,
+  })
+  async getFinopsComplianceMetrics(args: GetFinopsComplianceMetricsArgs, ctx: ExecutionContext) {
+    return this.getDatabaseStats(args, ctx);
+  }
+
+  @Tool({
+    name: 'get_service_health',
+    description: 'Check health and diagnostic status of the NitroStack MCP server and active Neon PostgreSQL connection pool.',
+    inputSchema: GetServiceHealthSchema,
+  })
+  async getServiceHealth(args: GetServiceHealthArgs, ctx: ExecutionContext) {
+    return this.getSystemStatus(args, ctx);
   }
 }

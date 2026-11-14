@@ -84,9 +84,9 @@ async function runStdioHandshake() {
     const toolsRes = await sendRequest('tools/list', {});
     const tools = toolsRes.result?.tools || [];
     console.log(`    Total Tools Discovered: ${tools.length}`);
-    tools.forEach((t) => console.log(`     - ${t.name}: ${t.description.split('.')[0]}`));
-    if (tools.length !== 10) {
-      throw new Error(`Expected 10 tools, got ${tools.length}`);
+    tools.forEach((t) => console.log(`     - ${t.name.padEnd(30)}: ${t.description.split('.')[0]}`));
+    if (tools.length !== 20) {
+      throw new Error(`Expected 20 tools (10 FinOps + 10 PRD), got ${tools.length}`);
     }
 
     // 3. tools/call -> get_system_status
@@ -137,7 +137,7 @@ async function runStdioHandshake() {
     const deleteText = deleteRes.result?.content?.[0]?.text;
     console.log(`    Delete Result:          ${deleteText}`);
 
-    // 6. tools/call -> estimate_pr_cost
+    // 6. tools/call -> estimate_pr_cost (PRD tool)
     console.log('\n[6] Calling tool estimate_pr_cost (real Class1 engine from external CWD) over STDIO stdin...');
     const beforeCode = `import openai\nclient = openai.OpenAI()\nresp = client.chat.completions.create(model='gpt-4o-mini', max_tokens=500)\n`;
     const afterCode = `import openai\nclient = openai.OpenAI()\nresp = client.chat.completions.create(model='gpt-4o', max_tokens=2000)\n`;
@@ -166,6 +166,56 @@ async function runStdioHandshake() {
         arguments: { id: estimateData.recordId },
       });
       console.log(`    Cleaned up estimate:    ${estimateData.recordId}`);
+    }
+
+    // 7. tools/call -> evaluate_pr_cost_risk (Enterprise FinOps domain tool)
+    console.log('\n[7] Calling tool evaluate_pr_cost_risk (Enterprise FinOps Domain Tool) over STDIO stdin...');
+    const finopsRes = await sendRequest('tools/call', {
+      name: 'evaluate_pr_cost_risk',
+      arguments: {
+        beforeCode,
+        afterCode,
+        path: 'services/finops_stdio_test.py',
+        prNumber: 1001,
+        budgetP90Usd: 6000,
+        samples: 1000,
+      },
+    });
+    const finopsText = finopsRes.result?.content?.[0]?.text;
+    const finopsData = JSON.parse(finopsText || '{}');
+    console.log(`    FinOps P90 Delta:       $${finopsData.forecast?.p90?.toFixed(2)}`);
+    console.log(`    FinOps Verdict:         ${finopsData.verdict}`);
+    console.log(`    FinOps Ledger UUID:     ${finopsData.recordId}`);
+
+    if (finopsData.recordId) {
+      await sendRequest('tools/call', {
+        name: 'delete_governance_record',
+        arguments: { id: finopsData.recordId },
+      });
+      console.log(`    Cleaned up FinOps record: ${finopsData.recordId}`);
+    }
+
+    // 8. tools/call -> log_budget_policy_override (Enterprise FinOps domain tool)
+    console.log('\n[8] Calling tool log_budget_policy_override (Enterprise FinOps Domain Tool) over STDIO stdin...');
+    const overrideRes = await sendRequest('tools/call', {
+      name: 'log_budget_policy_override',
+      arguments: {
+        title: 'Emergency Release Budget Override',
+        description: 'Approved for urgent hotfix deployment',
+        metadata: { approver: 'finops-lead', tier: 'P0' },
+      },
+    });
+    const overrideText = overrideRes.result?.content?.[0]?.text;
+    const overrideData = JSON.parse(overrideText || '{}');
+    const overrideId = overrideData.id || overrideData.record?.id;
+    console.log(`    Override Record ID:     ${overrideId}`);
+
+    if (overrideId) {
+      await sendRequest('tools/call', {
+        name: 'delete_governance_record',
+        arguments: { id: overrideId },
+      });
+      console.log(`    Cleaned up Override:    ${overrideId}`);
     }
 
     console.log('\n' + '='.repeat(70));
