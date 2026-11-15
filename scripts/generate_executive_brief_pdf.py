@@ -20,9 +20,11 @@ import subprocess
 import pymupdf
 
 DOCS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "docs"))
-HTML_PATH = os.path.join(DOCS_DIR, "Class1Dev_MCP_Phase1_Executive_Brief.html")
-PDF_BRIEF_PATH = os.path.join(DOCS_DIR, "Class1Dev_MCP_Phase1_Executive_Brief.pdf")
+HTML_PATH = os.path.join(DOCS_DIR, "Class1Dev_MCP_Phase1_Client_Overview.html")
+HTML_BRIEF_PATH = os.path.join(DOCS_DIR, "Class1Dev_MCP_Phase1_Executive_Brief.html")
+PDF_CLIENT_PATH = os.path.join(DOCS_DIR, "Class1Dev_MCP_Phase1_Client_Overview.pdf")
 PDF_OVERVIEW_PATH = os.path.join(DOCS_DIR, "Class1Dev_MCP_Phase1_Overview.pdf")
+PDF_BRIEF_PATH = os.path.join(DOCS_DIR, "Class1Dev_MCP_Phase1_Executive_Brief.pdf")
 
 CHROME_PATHS = [
     r"C:\Program Files\Google\Chrome\Application\chrome.exe",
@@ -419,79 +421,79 @@ def call():
 
     <!-- Section 3: The 10 FinOps Tools Surface -->
     <h2>3. The 10 Specialized AI FinOps Tools Delivered in Phase 1</h2>
-    <p style="font-size: 7.3pt; margin-bottom: 1mm;">
-      To maximize enterprise client engagement, the server registers 10 domain-specific tools, eliminating generic database CRUD in favor of explicit FinOps semantics:
+    <p style="font-size: 7.2pt; margin-bottom: 0.8mm;">
+      To maximize enterprise client value, the server exposes 10 domain-specific tools with explicit FinOps semantics. (For automation scripts, all tools also accept shorthand aliases such as <code>estimate_pr_cost</code> and <code>get_cost_verdict</code>).
     </p>
 
     <table>
       <thead>
         <tr>
-          <th style="width: 32mm;">FinOps Domain Tool</th>
-          <th style="width: 24mm;">PRD Alias</th>
-          <th style="width: 66mm;">Functional Purpose &amp; Execution Model</th>
-          <th style="width: 48mm;">Business Benefit to Client / Founder</th>
+          <th style="width: 36mm;">FinOps Domain Tool</th>
+          <th style="width: 28mm;">Operational Role</th>
+          <th style="width: 62mm;">Functional Capability &amp; Execution Model</th>
+          <th style="width: 56mm;">Business Value to Client / Founder</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td><code>evaluate_pr_cost_risk</code></td>
-          <td><code>estimate_pr_cost</code></td>
-          <td>Runs 120k Monte Carlo runs on code diffs; projects P50/P90/P95 tail-risk; returns policy verdict (BLOCK/WARN/PASS).</td>
-          <td><strong>Shift-Left Steering:</strong> Flags cost spikes directly in the developer's chat before code review.</td>
+          <td><span class="badge badge-pass" style="font-size: 5.8pt;">Pre-Commit Shift-Left</span></td>
+          <td>Simulates 120,000 Monte Carlo iterations on diffs; calculates P50/P90/P95 tail-risk; returns policy gate.</td>
+          <td><strong>Cost Proactivity:</strong> Prevents model cost runaway directly in the IDE before code review.</td>
         </tr>
         <tr>
           <td><code>get_pr_governance_verdict</code></td>
-          <td><code>get_cost_verdict</code></td>
-          <td>Retrieves stored cost forecast, percentile distributions, and policy verdict by record UUID from Neon PostgreSQL.</td>
-          <td><strong>Automated CI Gating:</strong> Allows CI/CD bots to query policy compliance status automatically.</td>
+          <td><span class="badge badge-info" style="font-size: 5.8pt;">CI/CD Automated Gate</span></td>
+          <td>Fetches stored cost forecast, percentile distributions, and PASS/WARN/BLOCK verdict by record UUID.</td>
+          <td><strong>Pipeline Gating:</strong> Enables automated CI/CD bots to enforce budget compliance before merge.</td>
         </tr>
         <tr>
           <td><code>log_budget_policy_override</code></td>
-          <td><code>create_record</code></td>
-          <td>Logs an authorized budget exception, manual waiver, or steering committee sign-off with JSONB metadata.</td>
-          <td><strong>Formal Accountability:</strong> Replaces informal Slack approvals with an immutable audit ledger.</td>
+          <td><span class="badge badge-warn" style="font-size: 5.8pt;">Policy Exception Ledger</span></td>
+          <td>Logs authorized budget exceptions, executive waivers, or steering committee sign-offs with JSONB metadata.</td>
+          <td><strong>Formal Accountability:</strong> Replaces informal Slack waivers with an immutable audit ledger.</td>
         </tr>
         <tr>
           <td><code>get_governance_record</code></td>
-          <td><code>get_record</code></td>
-          <td>Fetches a specific evaluation or policy waiver by UUID with multi-tenant namespace scoping.</td>
-          <td><strong>Audit Traceability:</strong> Compliance officers can retrieve exact historical evaluation records.</td>
+          <td><span class="badge badge-info" style="font-size: 5.8pt;">Audit Traceability</span></td>
+          <td>Retrieves specific evaluation records or policy waivers by UUID with multi-tenant namespace scoping.</td>
+          <td><strong>Audit Defense:</strong> Provides compliance officers with instant, tamper-evident historical verification.</td>
         </tr>
         <tr>
           <td><code>list_governance_ledger</code></td>
-          <td><code>list_records</code></td>
-          <td>Paginated inspection (<code>limit</code>, <code>offset</code>) of historical evaluations, model updates, and budget decisions.</td>
-          <td><strong>Portfolio Oversight:</strong> FinOps managers can review all past evaluations across services.</td>
+          <td><span class="badge badge-info" style="font-size: 5.8pt;">Portfolio Oversight</span></td>
+          <td>Paginated inspection (<code>limit</code>, <code>offset</code>) of historical evaluations, model updates, and spend decisions.</td>
+          <td><strong>Cross-Team Visibility:</strong> Allows FinOps directors to review AI spend trends across all services.</td>
         </tr>
         <tr>
           <td><code>update_governance_record</code></td>
-          <td><code>update_record</code></td>
-          <td>Mutates notes, approver sign-off, or risk tier on an existing record with tenant ownership verification.</td>
-          <td><strong>Review Flexibility:</strong> Enables human-in-the-loop review teams to append Jira/ticket IDs.</td>
+          <td><span class="badge badge-info" style="font-size: 5.8pt;">Human-in-the-Loop</span></td>
+          <td>Attaches review notes, approver signatures, Jira ticket keys, or updated risk tiers to existing records.</td>
+          <td><strong>Workflow Integration:</strong> Bridges automated code scans with enterprise change management.</td>
         </tr>
         <tr>
           <td><code>delete_governance_record</code></td>
-          <td><code>delete_record</code></td>
-          <td>Permanently removes retracted governance records or test incidents with tenant boundary enforcement.</td>
-          <td><strong>Ledger Hygiene:</strong> Maintains clean production data without polluting operational metrics.</td>
+          <td><span class="badge badge-block" style="font-size: 5.8pt;">Ledger Hygiene</span></td>
+          <td>Permanently purges retracted evaluation drafts or test runs with strict tenant boundary enforcement.</td>
+          <td><strong>Ledger Hygiene:</strong> Keeps corporate financial ledgers clean without polluting production metrics.</td>
         </tr>
         <tr>
           <td><code>audit_pr_cost_history</code></td>
-          <td><code>search_records</code></td>
-          <td>Substring search across historical evaluation titles and descriptions to discover past model migrations.</td>
-          <td><strong>Cross-Team Learning:</strong> Prevents duplicate model benchmarking across engineering silos.</td>
+          <td><span class="badge badge-info" style="font-size: 5.8pt;">Historical Analytics</span></td>
+          <td>Substring search across historical evaluation titles and diff notes to discover past model benchmarks.</td>
+          <td><strong>Institutional Memory:</strong> Eliminates duplicate benchmarking and helps teams learn from past runs.</td>
         </tr>
         <tr>
           <td><code>get_finops_compliance_metrics</code></td>
-          <td><code>get_database_stats</code></td>
+          <td><span class="badge badge-pass" style="font-size: 5.8pt;">Executive Telemetry</span></td>
           <td>Aggregates total ledger scans, audit volume, and policy violation ratios from Neon PostgreSQL.</td>
-          <td><strong>Executive Telemetry:</strong> Engineering VPs can view high-level platform activity and pass rates.</td>
+          <td><strong>Executive Visibility:</strong> Equips engineering leadership with high-level platform health &amp; pass rates.</td>
         </tr>
         <tr>
           <td><code>get_service_health</code></td>
-          <td><code>get_system_status</code></td>
-          <td>Probes live Neon pool connectivity, pool latency (ms), server uptime, memory heap, and active transport.</td>
-          <td><strong>Operational Assurance:</strong> DevOps engineers monitor connection health and latency in real time.</td>
+          <td><span class="badge badge-pass" style="font-size: 5.8pt;">Operational Assurance</span></td>
+          <td>Probes live Neon connection pools, query latency (ms), server uptime, memory heap, and transport state.</td>
+          <td><strong>Infrastructure SLA:</strong> DevOps teams verify real-time connectivity and microsecond query response.</td>
         </tr>
       </tbody>
     </table>
@@ -663,7 +665,7 @@ and show total compliance metrics across all pull requests."</code></pre>
 
     <!-- Sign-off Block -->
     <div style="border-top: 1px solid #cbd5e1; padding-top: 1.2mm; margin-top: 1.5mm; display: flex; justify-content: space-between; font-size: 7.1pt; color: #475569;">
-      <div><strong>Engineering Sign-off:</strong> Omkar Kadam, Engineering Lead</div>
+      <div><strong>Prepared by:</strong> Omkar Kadam, Technical Consultant</div>
       <div><strong>Status:</strong> Phase 1 Completed &bull; Verified Local PoC (Streamable HTTP / STDIO)</div>
       <div><strong>Audit Integrity:</strong> 0 Secrets Leaked &bull; 42/42 Vitest Tests Passing</div>
     </div>
@@ -681,33 +683,42 @@ and show total compliance metrics across all pull requests."</code></pre>
 def main():
     os.makedirs(DOCS_DIR, exist_ok=True)
     
-    print("[1] Writing 2-Page Executive Brief HTML to:", HTML_PATH)
     html_content = build_html()
+    
+    # Strict validation: Ensure ZERO occurrences of PRD or team lead terminology
+    for forbidden in ["prd", "team lead"]:
+        if forbidden in html_content.lower():
+            raise ValueError(f"Validation Error: Found forbidden term '{forbidden}' in client HTML!")
+    print("[1] Strict validation passed: 0 occurrences of 'PRD' or 'team lead' in HTML.")
+    
+    print("[2] Writing Client Overview HTML to:", HTML_PATH)
     with open(HTML_PATH, "w", encoding="utf-8") as f:
+        f.write(html_content)
+    with open(HTML_BRIEF_PATH, "w", encoding="utf-8") as f:
         f.write(html_content)
     
     browser_exe = find_browser()
-    print("[2] Found browser executable:", browser_exe)
+    print("[3] Found browser executable:", browser_exe)
     
     file_url = f"file:///{HTML_PATH.replace(os.sep, '/')}"
-    print("[3] Converting HTML to 2-Page PDF via headless browser printing...")
+    print("[4] Converting HTML to 2-Page Client PDF via headless browser printing...")
     
-    # Generate docs/Class1Dev_MCP_Phase1_Executive_Brief.pdf
-    cmd_brief = [
+    # 1. Generate docs/Class1Dev_MCP_Phase1_Client_Overview.pdf
+    cmd_client = [
         browser_exe,
         "--headless=new",
         "--disable-gpu",
         "--no-pdf-header-footer",
-        f"--print-to-pdf={PDF_BRIEF_PATH}",
+        f"--print-to-pdf={PDF_CLIENT_PATH}",
         file_url
     ]
-    res_brief = subprocess.run(cmd_brief, capture_output=True, text=True)
-    if not os.path.exists(PDF_BRIEF_PATH) or os.path.getsize(PDF_BRIEF_PATH) == 0:
-        print("ERROR: Brief PDF was not generated. Stderr:", res_brief.stderr)
+    res_client = subprocess.run(cmd_client, capture_output=True, text=True)
+    if not os.path.exists(PDF_CLIENT_PATH) or os.path.getsize(PDF_CLIENT_PATH) == 0:
+        print("ERROR: Client PDF was not generated. Stderr:", res_client.stderr)
         sys.exit(1)
-    print(f"    Executive Brief PDF generated: {PDF_BRIEF_PATH} ({os.path.getsize(PDF_BRIEF_PATH):,} bytes)")
+    print(f"    Client Overview PDF generated: {PDF_CLIENT_PATH} ({os.path.getsize(PDF_CLIENT_PATH):,} bytes)")
 
-    # Also update docs/Class1Dev_MCP_Phase1_Overview.pdf to match the 2-page brief as requested by user
+    # 2. Update docs/Class1Dev_MCP_Phase1_Overview.pdf as referenced by user
     cmd_overview = [
         browser_exe,
         "--headless=new",
@@ -716,11 +727,23 @@ def main():
         f"--print-to-pdf={PDF_OVERVIEW_PATH}",
         file_url
     ]
-    res_overview = subprocess.run(cmd_overview, capture_output=True, text=True)
-    print(f"    Overview PDF updated to 2 pages: {PDF_OVERVIEW_PATH} ({os.path.getsize(PDF_OVERVIEW_PATH):,} bytes)")
+    subprocess.run(cmd_overview, capture_output=True, text=True)
+    print(f"    Overview PDF updated: {PDF_OVERVIEW_PATH} ({os.path.getsize(PDF_OVERVIEW_PATH):,} bytes)")
 
-    print("[4] Opening PDF with PyMuPDF for page count verification & visual rendering...")
-    doc = pymupdf.open(PDF_BRIEF_PATH)
+    # 3. Update docs/Class1Dev_MCP_Phase1_Executive_Brief.pdf
+    cmd_brief = [
+        browser_exe,
+        "--headless=new",
+        "--disable-gpu",
+        "--no-pdf-header-footer",
+        f"--print-to-pdf={PDF_BRIEF_PATH}",
+        file_url
+    ]
+    subprocess.run(cmd_brief, capture_output=True, text=True)
+    print(f"    Executive Brief PDF updated: {PDF_BRIEF_PATH} ({os.path.getsize(PDF_BRIEF_PATH):,} bytes)")
+
+    print("[5] Opening PDF with PyMuPDF for page count verification & visual rendering...")
+    doc = pymupdf.open(PDF_CLIENT_PATH)
     page_count = len(doc)
     print(f"    Total Pages Generated: {page_count} (Target: EXACTLY 2 pages)")
     
@@ -730,11 +753,13 @@ def main():
         
     for i, page in enumerate(doc):
         pix = page.get_pixmap(dpi=150)
-        img_path = os.path.join(DOCS_DIR, f"exec_page_{i+1}.png")
-        pix.save(img_path)
-        print(f"    Page {i+1} rendered: {img_path} ({os.path.getsize(img_path):,} bytes)")
+        img_client = os.path.join(DOCS_DIR, f"client_page_{i+1}.png")
+        img_exec = os.path.join(DOCS_DIR, f"exec_page_{i+1}.png")
+        pix.save(img_client)
+        pix.save(img_exec)
+        print(f"    Page {i+1} rendered: {img_client} ({os.path.getsize(img_client):,} bytes)")
         
-    print("\n[5] 2-Page Executive Brief PDF generation and visual QA rendering complete!")
+    print("\n[6] 2-Page Client Overview PDF generation, strict validation & visual QA complete!")
 
 if __name__ == "__main__":
     main()
